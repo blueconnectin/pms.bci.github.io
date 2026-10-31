@@ -25,3 +25,13 @@ Buka path `/Index.html` (huruf I besar). Hosting statis harus memakai `Index.htm
 Nomor admin dikonfigurasi pada konstanta `ADMIN_WHATSAPP` di `Index.html`, dengan format kode negara dan angka saja. Tanggal awal memakai tanggal lokal perangkat pengguna.
 
 Implementasi lama dan modul Apps Script dari rancangan sebelumnya disalin ke `/workspace/payment-blueconnect-backup/` di lingkungan kerja, sebelum diganti. Formulir ini tidak memerlukan Google Apps Script atau Google Sheets.
+
+## Google Apps Script Web App
+
+`Code.gs` menyediakan `doGet()` untuk menampilkan `Index.html`. `appsscript.json` mendefinisikan runtime V8. Aplikasi tetap tanpa database atau penyimpanan data rekening.
+
+Untuk proyek baru: buat proyek pada Apps Script, tambahkan `Code.gs`, dan tambahkan file HTML bernama `Index` dengan isi `Index.html` dari repositori. Kemudian pilih **Deploy → New deployment → Web app**. Pilih akses sesuai kebutuhan organisasi. Gunakan URL deployment `/exec` untuk pemohon. Uji tombol WhatsApp dari URL tersebut; pengujian lokal tidak membuktikan navigasi dari sandbox Apps Script.
+
+Untuk sinkronisasi melalui `clasp`, diperlukan Script ID proyek tujuan, autentikasi Google yang berhak mengedit proyek, dan Apps Script API aktif pada akun. Gunakan OAuth interaktif yang aman; jangan kirim token atau berkas kredensial melalui chat atau commit ke Git. `.claspignore` membatasi unggahan pada tiga file aplikasi. Sebelum `clasp push` ke proyek lama, baca dan cadangkan sumber proyek serta deployment yang ada: sinkronisasi dapat menimpa file. Jangan gunakan `--force` atau mengganti manifest proyek lama tanpa memeriksa konfigurasi dan fungsinya.
+
+Push source dan deployment adalah dua langkah berbeda. Setelah source diperbarui, deployment yang sudah ada perlu diarahkan ke versi baru agar URL `/exec` menampilkan perubahan. Periksa formulir dan navigasi WhatsApp di deployment sebelum menyatakan aplikasi aktif.

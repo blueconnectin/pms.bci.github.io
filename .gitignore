@@ -1,0 +1,5 @@
+# Local Apps Script project selector and OAuth credentials
+.clasp.json
+.clasprc.json
+.clasp-credentials.json
+node_modules/
