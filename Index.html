@@ -22,6 +22,7 @@ main{margin-top:24px}
 .intro-completion .progress{margin-bottom:0;height:5px}
 @media(max-width:700px){main{margin-top:18px}.application-intro{padding:21px 20px;border-radius:12px;margin-bottom:14px}.intro-heading{gap:11px}.intro-icon{height:38px;width:38px;border-radius:10px}.intro-icon svg{height:21px;width:21px}.intro-heading h1{font-size:24px;margin-bottom:7px}.intro-heading p{font-size:14px;line-height:1.7}.intro-completion{margin-top:18px;padding-top:14px}.intro-completion .form-heading h2,.intro-completion .form-badge{font-size:12px}}
 @media(max-width:390px){.intro-heading h1{font-size:22px}.application-intro{padding:20px 17px}}
+.sales-details{margin-top:24px;padding-top:22px;border-top:1px solid #e1e9e6}.sales-details h3{font-size:17px;font-weight:650;margin:0 0 20px;color:#226858}.sales-details .notice{margin:18px 0 0}
 </style>
 </head>
 <body>
@@ -40,6 +41,11 @@ main{margin-top:24px}
 <div><label for="requestDate">Tanggal Pengajuan<span class="required" aria-hidden="true">*</span></label><input id="requestDate" name="requestDate" type="date" required></div>
 <fieldset class="full"><legend>Jenis Pengajuan<span class="required" aria-hidden="true">*</span></legend><div class="types"><label class="type"><input type="radio" name="requestType" value="Sales" required><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 17 9 11l4 3 8-10M15 4h6v6"/></svg><span>Sales</span></label><label class="type"><input type="radio" name="requestType" value="Manage Service"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8m-4-4v4M7 9h4m-4 3h8"/></svg><span>Manage Service</span></label><label class="type"><input type="radio" name="requestType" value="Reimburst"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h10v18l-3-2-2 2-2-2-3 2zM10 7h4m-4 4h4m-4 4h2"/></svg><span>Reimburst</span></label><label class="type"><input type="radio" name="requestType" value="Operasional"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="7" width="18" height="14" rx="2"/><path d="M8 7V3h8v4M3 12h18m-11 0v3h4v-3"/></svg><span>Operasional</span></label></div></fieldset>
 </div>
+<section id="salesDetails" class="sales-details" aria-labelledby="salesDetailsTitle" hidden>
+<h3 id="salesDetailsTitle">Detail pengajuan Sales</h3>
+<div class="grid"><div><label for="salesPeriodStart">Periode pengajuan — mulai<span class="required" aria-hidden="true">*</span></label><input id="salesPeriodStart" name="salesPeriodStart" type="date" disabled></div><div><label for="salesPeriodEnd">Periode pengajuan — selesai<span class="required" aria-hidden="true">*</span></label><input id="salesPeriodEnd" name="salesPeriodEnd" type="date" disabled></div><div class="full"><label for="salesCount">Jumlah sales<span class="required" aria-hidden="true">*</span></label><input id="salesCount" name="salesCount" type="number" min="1" step="1" inputmode="numeric" placeholder="Masukkan jumlah sales yang diajukan" aria-describedby="salesReconciliationNote" disabled></div></div>
+<p id="salesReconciliationNote" class="notice">Jumlah aktual akan dihitung berdasarkan hasil rekonsiliasi dengan admin proyek.</p>
+</section>
 </section><section class="form-block" aria-label="Rekening penerima"><h2 class="section-title"><span class="section-number">02</span>Rekening penerima</h2><p class="hint">Periksa nomor dan nama pemilik rekening dengan teliti.</p>
 <div class="grid"><div><label for="bank">Nama Bank<span class="required" aria-hidden="true">*</span></label><input id="bank" name="bank" placeholder="Contoh: BCA, BRI, Mandiri" maxlength="80" required></div><div><label for="accountNumber">Nomor Rekening<span class="required" aria-hidden="true">*</span></label><input id="accountNumber" name="accountNumber" type="text" inputmode="numeric" pattern="[0-9]{1,40}" maxlength="40" title="Masukkan nomor rekening menggunakan angka saja, tanpa spasi atau tanda hubung." placeholder="Nomor rekening tanpa spasi" required></div><div class="full"><label for="accountOwner">Nama Pemilik Rekening<span class="required" aria-hidden="true">*</span></label><input id="accountOwner" name="accountOwner" placeholder="Nama sesuai rekening bank" maxlength="120" required></div></div>
 </section><section id="uploadSection" class="form-block" hidden><h2 class="section-title"><span class="section-number">03</span>Lampiran bukti pengajuan</h2><p class="hint" id="attachmentNotice">Pilih 1–3 file. Maksimal 5 MB per file, total 10 MB. JPG, PNG, WEBP, PDF, DOCX, atau XLSX.</p><label class="upload-zone" id="uploadZone" for="evidenceFiles"><span class="upload-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 18H5a4 4 0 0 1-.5-8A7 7 0 0 1 18 8a5 5 0 0 1 1 10h-2M12 21V11m-4 4 4-4 4 4"/></svg></span><span><strong>Pilih foto atau dokumen</strong><span class="drop-help"> atau seret file ke sini</span></span><small>JPG, PNG, WEBP, PDF, DOCX, XLSX · maksimal 3 file</small><input type="file" id="evidenceFiles" multiple accept=".jpg,.jpeg,.png,.webp,.pdf,.docx,.xlsx" aria-label="Foto atau dokumen bukti" aria-describedby="attachmentNotice"></label><ul id="evidenceList" class="file-list" aria-live="polite"></ul><div class="notice">Lampiran diunggah ke Google Drive saat Anda memeriksa pengajuan. Tautannya dimasukkan ke pesan WhatsApp. Admin memerlukan akses ke folder bukti.</div></section><div id="manualEvidenceNotice" class="notice">Lampirkan foto atau dokumen bukti langsung di WhatsApp setelah pesan terbuka. Unggah Drive belum diaktifkan oleh admin.</div>
@@ -70,23 +76,44 @@ function requestData() {
   return data;
 }
 function displayDate(value) { const [year,month,day]=value.split('-'); return `${day}/${month}/${year}`; }
+const salesNote = 'Jumlah aktual akan dihitung berdasarkan hasil rekonsiliasi dengan admin proyek.';
+const salesInputs = ['salesPeriodStart','salesPeriodEnd','salesCount'];
+function isSales() {return form.querySelector('[name="requestType"]:checked')?.value === 'Sales';}
+function syncSalesDetails() {
+ const active = isSales();
+ document.getElementById('salesDetails').hidden = !active;
+ salesInputs.forEach(key => {form.elements[key].disabled = !active;form.elements[key].required = active;form.elements[key].setCustomValidity('');});
+ validateSalesDetails();
+}
+function validateSalesDetails() {
+ if (!isSales()) return;
+ const start = form.elements.salesPeriodStart, end = form.elements.salesPeriodEnd, count = form.elements.salesCount;
+ end.min = start.value;
+ end.setCustomValidity(start.value && end.value && end.value < start.value ? 'Tanggal selesai tidak boleh sebelum tanggal mulai.' : '');
+ count.setCustomValidity(count.value && (!Number.isSafeInteger(Number(count.value)) || Number(count.value) < 1) ? 'Jumlah sales harus bilangan bulat lebih dari nol.' : '');
+}
+function submissionEntries(data) {
+ const entries = Object.entries(labels).map(([key,label]) => [label,key === 'requestDate' ? displayDate(data[key]) : data[key]]);
+ if (data.requestType === 'Sales') entries.splice(3,0,
+  ['Periode pengajuan',displayDate(data.salesPeriodStart) + ' — ' + displayDate(data.salesPeriodEnd)],
+  ['Jumlah sales',data.salesCount],['Catatan sales',salesNote]);
+ return entries;
+}
 function whatsappMessage(data) {
- return ['PENGAJUAN BLUE CONNECT','',...Object.entries(labels).map(([key,label])=>`${label}: ${key==='requestDate'?displayDate(data[key]):data[key]}`),'','Lampiran Bukti Pengajuan:',...(driveUploadsEnabled ? uploadedEvidence.map((file,index) => (index + 1) + '. ' + file.name + ': ' + file.url) : ['Foto/dokumen dilampirkan langsung di WhatsApp.']),'','Mohon diproses oleh admin proyek. Terima kasih.'].join('\n');
+ return ['PENGAJUAN BLUE CONNECT','',...submissionEntries(data).map(([label,value]) => label + ': ' + value),'','Lampiran Bukti Pengajuan:',...(driveUploadsEnabled ? uploadedEvidence.map((file,index) => (index + 1) + '. ' + file.name + ': ' + file.url) : ['Foto/dokumen dilampirkan langsung di WhatsApp.']),'','Mohon diproses oleh admin proyek. Terima kasih.'].join('\n');
 }
 function updateProgress() {
- const fields = ['applicant','requestDate','bank','accountNumber','accountOwner'];
- const count = fields.filter(key => form.elements[key].value.trim() && form.elements[key].validity.valid).length + Number(!!form.querySelector('[name="requestType"]:checked')) + Number(document.getElementById('confirmation').checked) + Number(!driveUploadsEnabled || (evidenceInput.files.length > 0 && evidenceInput.validity.valid));
- document.getElementById('formProgress').style.width = `${count / 8 * 100}%`;
- document.querySelector('[role="progressbar"]').setAttribute('aria-valuenow', count);
- const total = driveUploadsEnabled ? 8 : 7;
- const completed = driveUploadsEnabled ? count : count - 1;
+ const fields = ['applicant','requestDate','bank','accountNumber','accountOwner'].concat(isSales() ? salesInputs : []);
+ const completed = fields.filter(key => form.elements[key].value.trim() && form.elements[key].validity.valid).length + Number(!!form.querySelector('[name="requestType"]:checked')) + Number(document.getElementById('confirmation').checked) + Number(driveUploadsEnabled && evidenceInput.files.length > 0 && evidenceInput.validity.valid);
+ const total = (driveUploadsEnabled ? 8 : 7) + (isSales() ? 3 : 0);
  document.getElementById('completionCount').textContent = completed + ' dari ' + total + ' terisi';
  document.getElementById('formProgress').style.width = (completed / total * 100) + '%';
  document.querySelector('[role="progressbar"]').setAttribute('aria-valuemax',total);
  document.querySelector('[role="progressbar"]').setAttribute('aria-valuenow',completed);
 }
-form.addEventListener('input',event=>{event.target.setCustomValidity('');document.getElementById('status').textContent='';updateProgress();});
-form.addEventListener('change',updateProgress);
+form.addEventListener('input',event=>{event.target.setCustomValidity('');validateSalesDetails();document.getElementById('status').textContent='';updateProgress();});
+form.addEventListener('change',event=>{if (event.target.name === 'requestType') syncSalesDetails();validateSalesDetails();updateProgress();});
+syncSalesDetails();
 updateProgress();
 function validateFiles() {
  if (!driveUploadsEnabled) return true;
@@ -150,6 +177,7 @@ async function showReview() {
  for (const key of ['applicant','bank','accountOwner']) {
   const input=form.elements[key];input.value=input.value.trim();input.setCustomValidity(input.value?'':'Kolom ini wajib diisi.');
  }
+ validateSalesDetails();
  if(!validateFiles() || !form.reportValidity()) return;
  const files = Array.from(evidenceInput.files);
  if (driveUploadsEnabled && (files.length !== uploadedFiles.length || files.some((file,i) => file !== uploadedFiles[i]))) {
@@ -169,12 +197,12 @@ async function showReview() {
   } catch (error) {
    document.getElementById('status').textContent = error.message || 'Unggah gagal. Silakan coba lagi.';
    return;
-  } finally {uploading = false;form.setAttribute('aria-busy','false');document.getElementById('reviewButtonLabel').textContent = 'Periksa Pengajuan';controls.forEach(control => control.disabled = false);}
+  } finally {uploading = false;form.setAttribute('aria-busy','false');document.getElementById('reviewButtonLabel').textContent = 'Periksa Pengajuan';controls.forEach(control => control.disabled = false);syncSalesDetails();}
  }
  const data=requestData();const summary=document.getElementById('summary');summary.replaceChildren();
- for(const [key,label] of Object.entries(labels)) {
+ for(const [label,value] of submissionEntries(data)) {
   const dt=document.createElement('dt');dt.textContent=label;
-  const dd=document.createElement('dd');dd.textContent=key==='requestDate'?displayDate(data[key]):data[key];summary.append(dt,dd);
+  const dd=document.createElement('dd');dd.textContent=value;summary.append(dt,dd);
  }
  const title = document.createElement('dt');title.textContent = 'Bukti pengajuan';
  const links = document.createElement('dd');
