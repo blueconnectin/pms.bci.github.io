@@ -6,7 +6,7 @@ Web App: https://script.google.com/macros/s/AKfycbzSlPMUFTn6WUINNiRJjF6sSQ_WvEeX
 
 ## Alur
 
-Isi Nama Pemohon, Tanggal Pengajuan, Jenis Pengajuan (Sales, Manage Service, Reimburst, Operasional), Nama Bank, Nomor Rekening, dan Nama Pemilik Rekening. Nominal tidak diminta; admin mencantumkannya pada invoice.
+Isi Nama Pemohon, Tanggal Pengajuan, Jenis Pengajuan (Sales, Manage Service, Reimburst, Operasional), Nama Bank, Nomor Rekening, dan Nama Pemilik Rekening. Khusus Reimburst, pemohon mengisi objek pengeluaran dan nominal Rupiah pada rincian yang dapat ditambah/dihapus. Total dihitung otomatis dan diteruskan ke ringkasan serta pesan WhatsApp. Jenis pengajuan lain tidak meminta nominal.
 
 Setelah unggah Drive diaktifkan, pemohon memilih 1–10 bukti (JPG/JPEG, PNG, WEBP, PDF, DOCX, XLSX), maksimal 5 MB per file dan 10 MB total. Tombol **Periksa Pengajuan** mengunggah file, lalu menampilkan ringkasan beserta tautan bukti. Pemohon kemudian membuka WhatsApp dengan pesan terisi dan menekan **Kirim** sendiri. Lampiran berupa tautan Drive, bukan file media WhatsApp. Tidak ada pengiriman pesan otomatis.
 

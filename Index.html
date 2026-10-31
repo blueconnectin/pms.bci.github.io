@@ -24,6 +24,7 @@ main{margin-top:24px}
 @media(max-width:390px){.intro-heading h1{font-size:22px}.application-intro{padding:20px 17px}}
 .sales-details{margin-top:24px;padding-top:22px;border-top:1px solid #e1e9e6}.sales-details h3{font-size:17px;font-weight:650;margin:0 0 20px;color:#226858}.sales-details .notice{margin:18px 0 0}
 .connection-status{margin-top:14px;padding:13px 15px;border:1px solid #efd6a8;background:#fffbf0;border-radius:9px;color:#89602d;font-size:14px;line-height:1.7;overflow-wrap:anywhere}.retry-evidence{margin-top:10px;width:100%}
+.reimbursement-hint{font-size:14px;line-height:1.7;color:#78879a;margin:0 0 18px}.reimbursement-row{padding:17px;border:1px solid #e1e9e6;border-radius:10px;margin-bottom:12px;background:#fbfdfc}.reimbursement-row-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;gap:12px}.reimbursement-row-title{font-size:14px;font-weight:600;color:#447163}.remove-reimbursement{min-height:32px;padding:5px 9px;color:#a55353;background:transparent;font-size:13px}.remove-reimbursement:disabled{opacity:.35;cursor:default}.add-reimbursement{width:100%;border:1px dashed #b8d6c8;background:#f3faf6;color:#137965}.reimbursement-total{display:flex;justify-content:space-between;gap:14px;padding-top:20px;margin-top:20px;border-top:1px solid #dfe9e3;font-size:16px;font-weight:600}.reimbursement-total output{color:#087f73;overflow-wrap:anywhere;min-width:0;text-align:right}@media(max-width:700px){.reimbursement-row .grid{grid-template-columns:1fr}.reimbursement-row{padding:14px}}
 </style>
 </head>
 <body>
@@ -50,6 +51,11 @@ main{margin-top:24px}
 <section id="manageServiceDetails" class="sales-details" aria-labelledby="manageServiceDetailsTitle" hidden>
 <h3 id="manageServiceDetailsTitle">Detail pengajuan Manage Service</h3>
 <div class="grid"><div><label for="managePeriodStart">Periode penagihan — mulai<span class="required" aria-hidden="true">*</span></label><input id="managePeriodStart" name="managePeriodStart" type="date" disabled></div><div><label for="managePeriodEnd">Periode penagihan — selesai<span class="required" aria-hidden="true">*</span></label><input id="managePeriodEnd" name="managePeriodEnd" type="date" disabled></div></div>
+</section>
+<section id="reimbursementDetails" class="sales-details" aria-labelledby="reimbursementTitle" hidden>
+<h3 id="reimbursementTitle">Detail pengajuan Reimburst</h3><p class="reimbursement-hint">Tambahkan setiap pengeluaran beserta nominalnya. Semua rincian wajib diisi.</p>
+<div id="reimbursementRows"></div><button id="addReimbursement" class="secondary add-reimbursement" type="button">+ Tambah rincian</button>
+<div class="reimbursement-total"><span>Total pengajuan</span><output id="reimbursementTotal" aria-live="polite">Rp0</output></div>
 </section>
 </section><section class="form-block" aria-label="Rekening penerima"><h2 class="section-title"><span class="section-number">02</span>Rekening penerima</h2><p class="hint">Periksa nomor dan nama pemilik rekening dengan teliti.</p>
 <div class="grid"><div><label for="bank">Nama Bank<span class="required" aria-hidden="true">*</span></label><input id="bank" name="bank" placeholder="Contoh: BCA, BRI, Mandiri" maxlength="80" required></div><div><label for="accountNumber">Nomor Rekening<span class="required" aria-hidden="true">*</span></label><input id="accountNumber" name="accountNumber" type="text" inputmode="numeric" pattern="[0-9]{1,40}" maxlength="40" title="Masukkan nomor rekening menggunakan angka saja, tanpa spasi atau tanda hubung." placeholder="Nomor rekening tanpa spasi" required></div><div class="full"><label for="accountOwner">Nama Pemilik Rekening<span class="required" aria-hidden="true">*</span></label><input id="accountOwner" name="accountOwner" placeholder="Nama sesuai rekening bank" maxlength="120" required></div></div>
@@ -78,6 +84,7 @@ document.getElementById('year').textContent = new Date().getFullYear();
 function requestData() {
   const data = Object.fromEntries(new FormData(form));
   for (const key of Object.keys(labels)) data[key] = (data[key] || '').trim();
+  if (isReimbursement()) data.reimbursementItems = reimbursementRows().map(row => ({object:row.querySelector('[data-reimbursement-object]').value.trim(),amount:Number(row.querySelector('[data-reimbursement-amount]').value)}));
   return data;
 }
 function displayDate(value) { const [year,month,day]=value.split('-'); return `${day}/${month}/${year}`; }
@@ -85,8 +92,56 @@ const salesNote = 'Jumlah aktual akan dihitung berdasarkan hasil rekonsiliasi de
 const salesInputs = ['salesPeriodStart','salesPeriodEnd','salesCount'];
 const manageInputs = ['managePeriodStart','managePeriodEnd'];
 function isManageService() {return form.querySelector('[name="requestType"]:checked')?.value === 'Manage Service';}
-function activeDetailInputs() {return isSales() ? salesInputs : (isManageService() ? manageInputs : []);}
+function activeDetailInputs() {return isSales() ? salesInputs : (isManageService() ? manageInputs : (isReimbursement() ? reimbursementRows().flatMap(row => Array.from(row.querySelectorAll('input'),input => input.name)) : []));}
 function isSales() {return form.querySelector('[name="requestType"]:checked')?.value === 'Sales';}
+let reimbursementSequence = 0;
+function isReimbursement() {return form.querySelector('[name="requestType"]:checked')?.value === 'Reimburst';}
+function reimbursementRows() {return Array.from(document.querySelectorAll('#reimbursementRows .reimbursement-row'));}
+function rupiah(value) {return new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',maximumFractionDigits:0}).format(value);}
+function updateReimbursementTotal() {
+ const rows = reimbursementRows();
+ let total = 0, valid = true;
+ rows.forEach((row,i) => {
+  row.querySelector('.reimbursement-row-title').textContent = 'Rincian ' + (i+1);
+  const remove = row.querySelector('[data-remove-reimbursement]');remove.disabled = rows.length === 1;remove.setAttribute('aria-label','Hapus rincian ' + (i+1));
+  const amount = Number(row.querySelector('[data-reimbursement-amount]').value);
+  if (!Number.isSafeInteger(amount) || amount < 0) valid = false;else total += amount;
+ });
+ document.getElementById('reimbursementTotal').textContent = valid && Number.isSafeInteger(total) ? rupiah(total) : 'Periksa nominal';
+}
+function validateReimbursementDetails() {
+ if (!isReimbursement()) return;
+ let total = 0;
+ const rows = reimbursementRows();
+ rows.forEach(row => {
+  const object = row.querySelector('[data-reimbursement-object]'), amount = row.querySelector('[data-reimbursement-amount]');
+  object.setCustomValidity(object.value && !object.value.trim() ? 'Objek reimburst wajib diisi.' : '');
+  const value = Number(amount.value);
+  amount.setCustomValidity(amount.value && (!Number.isSafeInteger(value) || value <= 0) ? 'Nominal harus Rupiah bulat lebih dari nol.' : '');
+  if (amount.value && Number.isSafeInteger(value) && value > 0) total += value;
+ });
+ if (!Number.isSafeInteger(total) && rows.length) rows[rows.length-1].querySelector('[data-reimbursement-amount]').setCustomValidity('Total nominal terlalu besar.');
+ updateReimbursementTotal();
+}
+function syncReimbursementDetails() {
+ const active = isReimbursement();
+ document.getElementById('reimbursementDetails').hidden = !active;
+ reimbursementRows().forEach(row => row.querySelectorAll('input').forEach(input => {input.disabled = !active;input.required = active;input.setCustomValidity('');}));
+ updateReimbursementTotal();
+}
+function addReimbursementRow(focus) {
+ const id = ++reimbursementSequence;
+ const row = document.createElement('div');row.className = 'reimbursement-row';
+ row.innerHTML = '<div class="reimbursement-row-header"><span class="reimbursement-row-title"></span><button type="button" class="remove-reimbursement" data-remove-reimbursement>Hapus</button></div><div class="grid"><div><label for="reimbursementObject' + id + '">Objek reimburst<span class="required" aria-hidden="true">*</span></label><input id="reimbursementObject' + id + '" name="reimbursementObject' + id + '" data-reimbursement-object maxlength="200" placeholder="Contoh: transportasi, pembelian alat"></div><div><label for="reimbursementAmount' + id + '">Nominal (Rp)<span class="required" aria-hidden="true">*</span></label><input id="reimbursementAmount' + id + '" name="reimbursementAmount' + id + '" data-reimbursement-amount type="number" min="1" step="1" inputmode="numeric" placeholder="Contoh: 150000"></div></div>';
+ row.querySelector('[data-remove-reimbursement]').addEventListener('click',() => {
+  if (uploading || reimbursementRows().length <= 1) return;
+  row.remove();validateReimbursementDetails();updateProgress();document.getElementById('addReimbursement').focus();
+ });
+ document.getElementById('reimbursementRows').append(row);
+ syncReimbursementDetails();updateProgress();
+ if (focus) row.querySelector('[data-reimbursement-object]').focus();
+}
+document.getElementById('addReimbursement').addEventListener('click',() => {if (!uploading) addReimbursementRow(true);});
 function syncSalesDetails() {
  const active = isSales();
  document.getElementById('salesDetails').hidden = !active;
@@ -94,9 +149,11 @@ function syncSalesDetails() {
  const manageActive = isManageService();
  document.getElementById('manageServiceDetails').hidden = !manageActive;
  manageInputs.forEach(key => {form.elements[key].disabled = !manageActive;form.elements[key].required = manageActive;form.elements[key].setCustomValidity('');});
+ syncReimbursementDetails();
  validateSalesDetails();
 }
 function validateSalesDetails() {
+ validateReimbursementDetails();
  if (isManageService()) {
   const start = form.elements.managePeriodStart, end = form.elements.managePeriodEnd;
   end.min = start.value;
@@ -114,6 +171,13 @@ function submissionEntries(data) {
   ['Periode pengajuan',displayDate(data.salesPeriodStart) + ' — ' + displayDate(data.salesPeriodEnd)],
   ['Jumlah sales',data.salesCount],['Catatan sales',salesNote]);
  if (data.requestType === 'Manage Service') entries.splice(3,0,['Periode penagihan',displayDate(data.managePeriodStart) + ' — ' + displayDate(data.managePeriodEnd)]);
+ if (data.requestType === 'Reimburst') {
+  const items = data.reimbursementItems || [];
+  const detail = [];
+  items.forEach((item,i) => {detail.push(['Objek reimburst ' + (i+1),item.object],['Nominal ' + (i+1),rupiah(item.amount)]);});
+  detail.push(['Total reimburst',rupiah(items.reduce((total,item) => total + item.amount,0))]);
+  entries.splice(3,0,...detail);
+ }
  return entries;
 }
 function whatsappMessage(data) {
@@ -130,6 +194,7 @@ function updateProgress() {
 }
 form.addEventListener('input',event=>{event.target.setCustomValidity('');validateSalesDetails();document.getElementById('status').textContent='';updateProgress();});
 form.addEventListener('change',event=>{if (event.target.name === 'requestType') syncSalesDetails();validateSalesDetails();updateProgress();});
+addReimbursementRow(false);
 syncSalesDetails();
 updateProgress();
 function validateFiles() {
