@@ -16,8 +16,8 @@ export async function prepareStage(stage, source) {
       if(entry.isDirectory()) await inspect(file);
       else if (/\.(?:js|gs)$/i.test(entry.name) && file !== path.join(stage,'Code.js')) {
         const text=await fs.readFile(file,'utf8');
-        if(/\bfunction\s+doGet\s*\(|\b(?:const|let|var)\s+doGet\s*=/.test(text)) {
-          throw new Error('Another remote script defines doGet. Resolve the entry point in Apps Script before syncing.');
+        if(/\bfunction\s+(?:doGet|doPost)\s*\(|\b(?:const|let|var)\s+(?:doGet|doPost)\s*=/.test(text)) {
+          throw new Error('Another remote script defines doGet/doPost. Resolve the entry point in Apps Script before syncing.');
         }
       }
     }

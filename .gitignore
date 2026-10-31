@@ -4,3 +4,9 @@
 .clasp-credentials.json
 node_modules/
 blueconnect-oauth*.json
+
+# Cloudflare build outputs and local secrets
+public/
+.wrangler/
+.dev.vars
+.dev.vars.*

@@ -1,0 +1,13 @@
+{
+  "name": "blueconnect-payment",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "engines": {"node": ">=22"},
+  "scripts": {
+    "build": "node cloudflare/build.mjs",
+    "deploy": "npm run build && wrangler deploy",
+    "test:bridge": "node --test tests/cloudflare.test.mjs"
+  },
+  "devDependencies": {"wrangler": "4.156.0"}
+}

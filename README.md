@@ -56,3 +56,9 @@ Tes backend memakai layanan Google tiruan, meliputi validasi, deduplikasi, pembe
 Ikuti [panduan koneksi](CONNECT_APPS_SCRIPT.md). Workflow mempertahankan manifest dan file remote lain, membuat versi cadangan, memperbarui `Code` serta `Index`, lalu memverifikasi source. Jangan memasukkan template literal berisi URL `https://` ke script HTML: transformasi HtmlService pada deployment ini pernah memotongnya dan menyebabkan syntax error. Gunakan string biasa untuk URL.
 
 Nomor tujuan WhatsApp dikonfigurasi melalui `ADMIN_WHATSAPP` di `Index.html`. Kredensial sinkronisasi hanya berada di GitHub Secrets. Implementasi lama dicadangkan di `/workspace/payment-blueconnect-backup/` pada lingkungan kerja sebelumnya.
+
+## Domain payment.blueconnect.id
+
+Versi Cloudflare Worker + Static Assets tersedia untuk menampilkan formulir pada domain sendiri tanpa redirect ke Google. Ikuti [panduan Cloudflare](CONNECT_CLOUDFLARE.md). Unggah Drive melewati endpoint server dengan tanda tangan HMAC; kunci berada di Cloudflare Secrets dan Script Properties. Tidak ada token Google di browser.
+
+Status: source dan paket deployment disiapkan; pemasangan akun Cloudflare, secret penghubung, Custom Domain, serta uji unggah pada domain sendiri harus dilakukan sebelum menyatakan domain aktif. Deployment Google yang sudah ada tetap berfungsi dan dipertahankan sebagai backend Drive.

@@ -105,12 +105,28 @@ uploadZone.addEventListener('drop',event => {if (uploading || !event.dataTransfe
 function readFile(file) {
  return new Promise((resolve,reject) => {const reader = new FileReader();reader.onload = () => resolve({name:file.name,type:file.type,data:String(reader.result).split(',')[1]});reader.onerror = () => reject(new Error('File tidak dapat dibaca. Pilih ulang lampiran.'));reader.readAsDataURL(file);});
 }
-function uploadToDrive(payload) {
- return new Promise((resolve,reject) => {
-  if (!window.google || !google.script || !google.script.run) return reject(new Error('Unggah tersedia dari Web App Google Apps Script.'));
-  google.script.run.withSuccessHandler(resolve).withFailureHandler(reject).uploadEvidence(payload);
+function callBackend(method,payload) {
+ if (window.google && google.script && google.script.run) {
+  return new Promise((resolve,reject) => {
+   const rpc = google.script.run.withSuccessHandler(resolve).withFailureHandler(reject);
+   if (method === 'uploadEvidence') rpc.uploadEvidence(payload);
+   else rpc.getEvidenceConfiguration();
+  });
+ }
+ const isConfig = method === 'getEvidenceConfiguration';
+ return fetch(isConfig ? '/api/config' : '/api/evidence',{
+  method:isConfig ? 'GET' : 'POST',
+  headers:isConfig ? {} : {'Content-Type':'application/json'},
+  body:isConfig ? undefined : JSON.stringify(payload),
+  credentials:'same-origin',
+  cache:'no-store'
+ }).then(async response => {
+  const result = await response.json();
+  if (!response.ok) throw new Error(result.error || 'Penyimpanan bukti belum tersedia.');
+  return result;
  });
 }
+function uploadToDrive(payload) {return callBackend('uploadEvidence',payload);}
 async function showReview() {
  if (uploading) return;
  for (const key of ['applicant','bank','accountOwner']) {
@@ -180,10 +196,10 @@ function configureEvidence(config) {
  document.getElementById('reviewEvidenceText').textContent = driveUploadsEnabled ? 'Tautan Google Drive akan disertakan dalam pesan. Tekan Kirim di WhatsApp untuk mengirim pengajuan.' : 'Tambahkan foto atau dokumen bukti setelah WhatsApp terbuka, lalu tekan Kirim.';
  updateProgress();
 }
-if (window.google && google.script && google.script.run) {
+if ((window.google && google.script && google.script.run) || /^https?:$/.test(window.location.protocol)) {
  document.getElementById('reviewButton').disabled = true;
  document.getElementById('status').textContent = 'Memeriksa pengaturan lampiran…';
- google.script.run.withSuccessHandler(config => {configureEvidence(config);document.getElementById('reviewButton').disabled = false;document.getElementById('status').textContent = '';}).withFailureHandler(() => {configureEvidence({enabled:false});document.getElementById('reviewButton').disabled = false;document.getElementById('status').textContent = 'Unggah Drive belum tersedia. Lampirkan bukti langsung di WhatsApp.';}).getEvidenceConfiguration();
+ callBackend('getEvidenceConfiguration').then(config => {configureEvidence(config);document.getElementById('reviewButton').disabled = false;document.getElementById('status').textContent = '';}).catch(() => {configureEvidence({enabled:false});document.getElementById('reviewButton').disabled = false;document.getElementById('status').textContent = 'Unggah Drive belum tersedia. Lampirkan bukti langsung di WhatsApp.';});
 } else configureEvidence({enabled:false});
 })();
 </script>

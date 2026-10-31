@@ -76,3 +76,28 @@ function authorizeEvidenceStorage() {
 function getEvidenceConfiguration() {
   return {enabled:PropertiesService.getScriptProperties().getProperty('EVIDENCE_UPLOADS_READY') === 'true'};
 }
+
+/** Receives only requests signed by the Cloudflare server, not browser secrets. */
+function doPost(event) {
+  var response;
+  try {
+    var raw = event && event.postData && event.postData.contents;
+    if (!raw || raw.length > 21 * 1024 * 1024) throw new Error('Permintaan tidak valid.');
+    var envelope = JSON.parse(raw);
+    var secret = PropertiesService.getScriptProperties().getProperty('CLOUDFLARE_BRIDGE_SECRET');
+    if (!secret || secret.length < 32) throw new Error('Koneksi domain belum diaktifkan oleh admin.');
+    if (typeof envelope.timestamp !== 'number' || Math.abs(Date.now() - envelope.timestamp) > 180000 || !/^[a-f0-9-]{36}$/i.test(envelope.nonce || '') || typeof envelope.payload !== 'string' || !/^[a-f0-9]{64}$/i.test(envelope.signature || '')) throw new Error('Permintaan tidak sah atau kedaluwarsa.');
+    var message = envelope.timestamp + '\n' + envelope.nonce + '\n' + envelope.payload;
+    var expected = Utilities.computeHmacSha256Signature(message,secret).map(function(byte) {return ('0' + (byte & 255).toString(16)).slice(-2);}).join('');
+    var mismatch = 0;
+    for (var i = 0; i < expected.length; i++) mismatch |= expected.charCodeAt(i) ^ envelope.signature.toLowerCase().charCodeAt(i);
+    if (mismatch) throw new Error('Tanda tangan permintaan tidak valid.');
+    var payload = JSON.parse(envelope.payload);
+    if (payload.action === 'config') response = {ok:true,data:getEvidenceConfiguration()};
+    else if (payload.action === 'upload') response = {ok:true,data:uploadEvidence(payload.input)};
+    else throw new Error('Aksi tidak didukung.');
+  } catch (error) {
+    response = {ok:false,error:String(error.message || 'Permintaan gagal.')};
+  }
+  return ContentService.createTextOutput(JSON.stringify(response)).setMimeType(ContentService.MimeType.JSON);
+}
