@@ -13,6 +13,7 @@ on:
       - Index.html
       - Code.gs
       - .github/scripts/apps-script-sync.mjs
+      - .github/scripts/verify-deployment.mjs
       - .github/workflows/apps-script.yml
       - cloudflare/**
       - wrangler.jsonc
@@ -89,6 +90,8 @@ jobs:
       - name: Report missing managed Drive secret
         if: env.DRIVE_BRIDGE_SECRET == ''
         run: echo '::warning::Add repository secret BRIDGE_SECRET matching Apps Script CLOUDFLARE_BRIDGE_SECRET to manage the Drive connection during deployment. Existing encrypted Worker secrets are retained, but plaintext variables can be replaced.'
+      - name: Verify domain version and Drive connection
+        run: node .github/scripts/verify-deployment.mjs
       - name: Summarize release
         run: |
           echo '### Cloudflare deployment completed' >> "$GITHUB_STEP_SUMMARY"

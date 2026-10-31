@@ -1,6 +1,6 @@
 const MAX_BODY = 14 * 1024 * 1024;
 function json(body,status=200) {
-  return Response.json(body,{status,headers:{'Cache-Control':'no-store','X-Content-Type-Options':'nosniff','Referrer-Policy':'no-referrer'}});
+  return Response.json(body,{status,headers:{'Cache-Control':'no-store','X-Content-Type-Options':'nosniff','Referrer-Policy':'no-referrer','X-Blueconnect-Api':'2'}});
 }
 async function readLimited(request) {
   if(Number(request.headers.get('content-length')) > MAX_BODY) throw new Error('SIZE');
@@ -21,9 +21,10 @@ export async function signedEnvelope(payload,secret) {
 }
 export async function handle(request,env,fetchUpstream=fetch) {
   const url=new URL(request.url);
-  if(!url.pathname.startsWith('/api/'))return env.ASSETS.fetch(request);
-  if(!['/api/config','/api/evidence'].includes(url.pathname))return json({error:'Endpoint tidak ditemukan.'},404);
-  const isConfig=url.pathname==='/api/config';
+  const route=url.pathname.replace(/\/{2,}/g,'/').replace(/\/+$/,'');
+  if(!route.startsWith('/api/'))return env.ASSETS.fetch(request);
+  if(!['/api/config','/api/evidence'].includes(route))return json({error:'Endpoint tidak ditemukan.',code:'API_ROUTE_NOT_FOUND',path:route},404);
+  const isConfig=route==='/api/config';
   if(request.method!==(isConfig?'GET':'POST'))return json({error:'Metode tidak didukung.'},405);
   // Same-origin browser requests only; this is an upload endpoint, not a proxy.
   const origin=request.headers.get('origin');
