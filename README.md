@@ -80,3 +80,9 @@ Untuk unggahan baru, aplikasi membuat satu subfolder per batch pengajuan di dala
 ## Catatan otomatis Google Sheets
 
 [Panduan aktivasi catatan](CONNECT_SUBMISSION_LOG.md) menjelaskan otorisasi satu kali melalui fungsi `authorizeSubmissionLog`. Tujuannya adalah spreadsheet yang diberikan pengguna, pada tab **Pengajuan**. Setelah aktif, data dan rekening dicatat sebelum ringkasan ditampilkan; status WhatsApp belum dikonfirmasi. Retry dan revisi draft menggunakan ID yang sama. Tidak ada perubahan pada kebijakan akses spreadsheet atau folder Drive.
+
+## Nama folder bukti
+
+Untuk unggahan baru dari formulir terbaru, subfolder memakai format **Nama Pemohon - Jenis Pengajuan - YYYY-MM-DD**, misalnya `Dani - Sales - 2026-10-31`. Tanggal berasal dari Tanggal Pengajuan yang dipilih, bukan tanggal server. Karakter pemisah/path yang tidak sesuai dibersihkan; nama tidak mengandung nomor rekening. Nama sama tetap dapat berada dalam folder berbeda karena identitas Drive-nya berbeda.
+
+Koreksi metadata sebelum WhatsApp dibuka memperbarui nama subfolder unggahan yang sama, dengan pemeriksaan sesi unggah dan folder induk; tautan tidak berubah. Koreksi identitas setelah WhatsApp dibuka membuat folder unggahan baru agar folder pengajuan sebelumnya tidak diganti namanya. Sesi pembaruan nama berlaku selama cache kepemilikan tersedia, maksimal enam jam; pilih ulang lampiran bila sesi kedaluwarsa. Folder lama di arsip tidak diubah secara massal.

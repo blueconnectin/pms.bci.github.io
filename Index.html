@@ -86,7 +86,7 @@ const form = document.getElementById('requestForm');
 const review = document.getElementById('reviewDialog');
 const evidenceInput = document.getElementById('evidenceFiles');
 let driveUploadsEnabled = true, evidenceReady = false, recordingEnabled = false;
-let submissionRecordId = '', lastSavedSnapshot = '', recordFinalized = false;
+let submissionRecordId = '', lastSavedSnapshot = '', recordFinalized = false, uploadedFolderMetadata = '';
 let uploadedEvidence = [], uploadedFiles = [], selectedEvidenceFiles = [], uploadRequestId = '', uploading = false;
 const labels = {applicant:'Nama Pemohon',requestDate:'Tanggal Pengajuan',projectType:'Jenis proyek',requestCategory:'Kategori pengajuan',requestType:'Jenis Pengajuan',bank:'Nama Bank',accountNumber:'Nomor Rekening',accountOwner:'Nama Pemilik Rekening'};
 function localDate(date) { return [date.getFullYear(),String(date.getMonth()+1).padStart(2,'0'),String(date.getDate()).padStart(2,'0')].join('-'); }
@@ -327,11 +327,12 @@ function callBackend(method,payload) {
    const rpc = google.script.run.withSuccessHandler(resolve).withFailureHandler(reject);
    if (method === 'uploadEvidence') rpc.uploadEvidence(payload);
    else if (method === 'saveSubmissionRecord') rpc.saveSubmissionRecord(payload);
+   else if (method === 'updateEvidenceFolder') rpc.updateEvidenceFolder(payload);
    else rpc.getEvidenceConfiguration();
   });
  }
  const isConfig = method === 'getEvidenceConfiguration';
- return fetch(isConfig ? '/api/config' : (method === 'saveSubmissionRecord' ? '/api/submissions' : '/api/evidence'),{
+ return fetch(isConfig ? '/api/config' : (method === 'saveSubmissionRecord' ? '/api/submissions' : (method === 'updateEvidenceFolder' ? '/api/evidence-folder' : '/api/evidence')),{
   method:isConfig ? 'GET' : 'POST',
   headers:isConfig ? {} : {'Content-Type':'application/json'},
   body:isConfig ? undefined : JSON.stringify(payload),
@@ -353,6 +354,9 @@ async function showReview() {
  validateRequestDetails();
  if(!validateFiles() || !form.reportValidity()) return;
  const files = Array.from(evidenceInput.files);
+ const metadata = {applicant:form.elements.applicant.value.trim(),requestType:selectedRequestType(),requestDate:form.elements.requestDate.value};
+ const metadataSnapshot = JSON.stringify(metadata);
+ if (recordFinalized && uploadedFolderMetadata && metadataSnapshot !== uploadedFolderMetadata) {uploadedFiles = [];uploadRequestId = newRecordId();}
  if (driveUploadsEnabled && (files.length !== uploadedFiles.length || files.some((file,i) => file !== uploadedFiles[i]))) {
   uploading = true;
   form.setAttribute('aria-busy','true');
@@ -362,15 +366,27 @@ async function showReview() {
   document.getElementById('status').textContent = 'Mengunggah bukti ke Google Drive… Jangan tutup halaman ini.';
   try {
    const encoded = await Promise.all(files.map(readFile));
-   uploadedEvidence = await uploadToDrive({requestId:uploadRequestId,files:encoded});
+   uploadedEvidence = await uploadToDrive({requestId:uploadRequestId,files:encoded,metadata});
    if (!Array.isArray(uploadedEvidence) || uploadedEvidence.length !== files.length || uploadedEvidence.some(file => !/^https:\/\/drive\.google\.com\//.test(file.url) || !/^https:\/\/drive\.google\.com\/drive\/folders\//.test(file.folderUrl || '') || file.folderUrl !== uploadedEvidence[0].folderUrl)) throw new Error('Tautan unggahan tidak valid. Silakan coba lagi.');
    uploadedFiles = files;
+   uploadedFolderMetadata = metadataSnapshot;
    form.querySelectorAll('.file-info small').forEach((label,i) => {label.textContent = (files[i].size / 1024 / 1024).toFixed(2) + ' MB · Tersimpan di Drive';});
    document.getElementById('status').textContent = '';
   } catch (error) {
    document.getElementById('status').textContent = error.message || 'Unggah gagal. Silakan coba lagi.';
    return;
   } finally {uploading = false;form.setAttribute('aria-busy','false');document.getElementById('reviewButtonLabel').textContent = 'Periksa Pengajuan';controls.forEach(control => control.disabled = false);syncRequestCategory(false);}
+ }
+ if (uploadedFolderMetadata !== metadataSnapshot) {
+  const controls = Array.from(form.querySelectorAll('input,select,textarea,button'));
+  uploading = true;controls.forEach(control => control.disabled = true);
+  document.getElementById('status').textContent = 'Memperbarui nama folder bukti…';
+  try {
+   const result = await callBackend('updateEvidenceFolder',{requestId:uploadRequestId,folderUrl:uploadedEvidence[0].folderUrl,metadata});
+   if (!result || result.folderUrl !== uploadedEvidence[0].folderUrl) throw new Error('Pembaruan folder belum terkonfirmasi.');
+   uploadedFolderMetadata = metadataSnapshot;document.getElementById('status').textContent = '';
+  } catch (error) {document.getElementById('status').textContent = 'Nama folder belum diperbarui. ' + (error.message || 'Silakan coba kembali.');return;}
+  finally {uploading = false;controls.forEach(control => control.disabled = false);syncRequestCategory(false);}
  }
  const data = requestData();
  const recordStatus = document.getElementById('recordStatus');

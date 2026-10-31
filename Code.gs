@@ -7,6 +7,16 @@ function doGet() {
     .addMetaTag('viewport', 'width=device-width, initial-scale=1');
 }
 
+function evidenceFolderName_(metadata) {
+  var name = recordText_(metadata.applicant,'Nama pemohon',120);
+  var type = recordText_(metadata.requestType,'Jenis pengajuan',80);
+  var date = recordDate_(metadata.requestDate);
+  function clean(value) {return value.replace(/[\\/:*?"<>|\x00-\x1f]/g,' ').replace(/\s+/g,' ').trim();}
+  name = clean(name);type = clean(type);
+  if (!name || !type) throw new Error('Nama pemohon atau jenis pengajuan tidak valid untuk nama folder.');
+  return name + ' - ' + type + ' - ' + date;
+}
+
 /** Uploads evidence into the admin-configured folder. Never grants public access. */
 function uploadEvidence(input) {
   if (PropertiesService.getScriptProperties().getProperty('EVIDENCE_UPLOADS_READY') !== 'true') throw new Error('Admin perlu menjalankan authorizeEvidenceStorage terlebih dahulu.');
@@ -14,6 +24,7 @@ function uploadEvidence(input) {
   if (!input || !/^[a-f0-9-]{36}$/i.test(input.requestId || '') || !Array.isArray(input.files) || input.files.length < 1 || input.files.length > 10) {
     throw new Error('Pilih 1–10 lampiran dengan total maksimal 10 MB.');
   }
+  var requestedFolderName = input.metadata ? evidenceFolderName_(input.metadata) : 'Pengajuan-' + new Date().toISOString().slice(0,10) + '-' + input.requestId;
   var folderId = PropertiesService.getScriptProperties().getProperty('UPLOAD_FOLDER_ID') || EVIDENCE_DEFAULT_FOLDER_ID_;
   if (!folderId) throw new Error('Folder bukti belum dikonfigurasi oleh admin.');
   var total = 0;
@@ -47,23 +58,50 @@ function uploadEvidence(input) {
   var created = [], batchFolder;
   try {
     var cache = CacheService.getScriptCache(), previous = cache.get(cacheKey);
-    if (previous) return JSON.parse(previous);
+    if (previous) {
+      var cached = JSON.parse(previous);
+      if (input.metadata) {
+        var cachedFolderId = cached[0].folderUrl.match(/\/folders\/([A-Za-z0-9_-]+)/)[1];
+        DriveApp.getFolderById(cachedFolderId).setName(requestedFolderName);
+        cache.put('evidence-owner-' + cachedFolderId,input.requestId,21600);
+      }
+      return cached;
+    }
     var folder;
     try {folder = DriveApp.getFolderById(folderId); folder.getName();}
     catch (error) {throw new Error('Folder bukti tidak dapat diakses. Admin perlu memeriksa UPLOAD_FOLDER_ID dan izin Drive.');}
-    batchFolder = folder.createFolder('Pengajuan-' + new Date().toISOString().slice(0,10) + '-' + input.requestId);
+    batchFolder = folder.createFolder(requestedFolderName);
     var folderUrl = batchFolder.getUrl();
     var result = files.map(function(file) {
       var stored = batchFolder.createFile(Utilities.newBlob(file.bytes,file.type,Utilities.getUuid() + '-' + file.name));
       created.push(stored);
       return {name:file.name,url:stored.getUrl(),folderUrl:folderUrl};
     });
+    cache.put('evidence-owner-' + batchFolder.getId(),input.requestId,21600);
     cache.put(cacheKey,JSON.stringify(result),21600);
     return result;
   } catch (error) {
     created.forEach(function(file) {try {file.setTrashed(true);} catch (cleanupError) { /* Owner can remove partial files from the folder. */ }});
     if (batchFolder) {try {batchFolder.setTrashed(true);} catch (cleanupFolderError) { /* Owner can remove incomplete batch folders. */ }}
     throw new Error('Unggah bukti gagal. Periksa konfigurasi folder dan otorisasi Drive, lalu coba lagi.');
+  } finally {lock.releaseLock();}
+}
+
+/** Renames only a recently uploaded folder owned by this unguessable upload session. */
+function updateEvidenceFolder(input) {
+  if (!input || !/^[a-f0-9-]{36}$/i.test(input.requestId || '')) throw new Error('Sesi unggah tidak valid.');
+  var match = String(input.folderUrl || '').match(/^https:\/\/drive\.google\.com\/drive\/folders\/([A-Za-z0-9_-]+)(?:\?.*)?$/);
+  if (!match) throw new Error('Tautan folder bukti tidak valid.');
+  var name = evidenceFolderName_(input.metadata || {});
+  var lock = LockService.getScriptLock();lock.waitLock(30000);
+  try {
+    if (CacheService.getScriptCache().get('evidence-owner-' + match[1]) !== input.requestId) throw new Error('Sesi unggah kedaluwarsa. Pilih ulang lampiran agar nama folder dapat diperbarui.');
+    var folder = DriveApp.getFolderById(match[1]), parents = folder.getParents(), allowed = false;
+    var root = PropertiesService.getScriptProperties().getProperty('UPLOAD_FOLDER_ID') || EVIDENCE_DEFAULT_FOLDER_ID_;
+    while (parents.hasNext()) if (parents.next().getId() === root) allowed = true;
+    if (!allowed) throw new Error('Folder tidak berada di penyimpanan bukti pengajuan.');
+    folder.setName(name);
+    return {folderUrl:folder.getUrl()};
   } finally {lock.releaseLock();}
 }
 
@@ -100,6 +138,7 @@ function doPost(event) {
     if (payload.action === 'config') response = {ok:true,data:getEvidenceConfiguration()};
     else if (payload.action === 'upload') response = {ok:true,data:uploadEvidence(payload.input)};
     else if (payload.action === 'record') response = {ok:true,data:saveSubmissionRecord(payload.input)};
+    else if (payload.action === 'renameEvidence') response = {ok:true,data:updateEvidenceFolder(payload.input)};
     else throw new Error('Aksi tidak didukung.');
   } catch (error) {
     response = {ok:false,error:String(error.message || 'Permintaan gagal.')};
