@@ -89,7 +89,7 @@ function closeReview() {
 document.getElementById('editButton').addEventListener('click',closeReview);
 document.getElementById('whatsappButton').addEventListener('click',()=>{
  if(!form.reportValidity()) {closeReview();return;}
- const url=`https://wa.me/${ADMIN_WHATSAPP}?text=${encodeURIComponent(whatsappMessage(requestData()))}`;
+ const url = 'https://wa.me/' + ADMIN_WHATSAPP + '?text=' + encodeURIComponent(whatsappMessage(requestData()));
  // A real click opens WhatsApp; no API key, backend, or automatic send is involved.
  const link=document.createElement('a');link.href=url;link.target='_blank';link.rel='noopener noreferrer';link.click();
  closeReview();document.getElementById('status').textContent='Jika WhatsApp sudah terbuka, lampirkan bukti foto atau dokumen lalu tekan Kirim. Jika belum terbuka, periksa pengajuan dan coba lagi. Data tetap tersedia di formulir ini.';
