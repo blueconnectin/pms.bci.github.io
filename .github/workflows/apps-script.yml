@@ -76,6 +76,7 @@ jobs:
         run: |
           test -n "$CLOUDFLARE_API_TOKEN" || { echo 'Add the CLOUDFLARE_API_TOKEN repository secret.'; exit 1; }
           test -n "$CLOUDFLARE_ACCOUNT_ID" || { echo 'Add the CLOUDFLARE_ACCOUNT_ID repository secret.'; exit 1; }
+          test "${#DRIVE_BRIDGE_SECRET}" -ge 32 || { echo 'Add repository secret BRIDGE_SECRET with the same value as Apps Script CLOUDFLARE_BRIDGE_SECRET (at least 32 characters).'; exit 1; }
       - name: Install dependencies
         run: npm ci --no-audit --no-fund
       - name: Test server bridge
@@ -85,11 +86,7 @@ jobs:
       - name: Deploy the same commit to Cloudflare
         run: npx wrangler deploy
       - name: Keep Drive bridge configured as a Worker secret
-        if: env.DRIVE_BRIDGE_SECRET != ''
         run: printf '%s' "$DRIVE_BRIDGE_SECRET" | npx wrangler secret put BRIDGE_SECRET
-      - name: Report missing managed Drive secret
-        if: env.DRIVE_BRIDGE_SECRET == ''
-        run: echo '::warning::Add repository secret BRIDGE_SECRET matching Apps Script CLOUDFLARE_BRIDGE_SECRET to manage the Drive connection during deployment. Existing encrypted Worker secrets are retained, but plaintext variables can be replaced.'
       - name: Verify domain version and Drive connection
         run: node .github/scripts/verify-deployment.mjs
       - name: Summarize release
