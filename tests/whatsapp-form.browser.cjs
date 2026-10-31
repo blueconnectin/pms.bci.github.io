@@ -10,8 +10,8 @@ const {chromium} = require('playwright');
   const server = http.createServer((request, response) => {
     response.setHeader('Content-Type', 'text/html; charset=utf-8');
     if(request.url === '/api/config'){response.setHeader('Content-Type','application/json');response.end(JSON.stringify({enabled:true}));return;}
-    if(request.url === '/api/evidence'){response.setHeader('Content-Type','application/json');response.end(JSON.stringify([{name:'bukti.pdf',url:'https://drive.google.com/file/d/test/view'}]));return;}
-    response.end(request.url === '/Index.html' ? html.replace('<script>', '<script>var form, review, labels;window.google={script:{run:{withSuccessHandler:function(fn){return {withFailureHandler:function(){return {getEvidenceConfiguration:function(){fn({enabled:true})},uploadEvidence:function(){fn([{name:"bukti.pdf",url:"https://drive.google.com/file/d/test/view"}])}}}}}}}};</script><script>') : harness);
+    if(request.url === '/api/evidence'){response.setHeader('Content-Type','application/json');response.end(JSON.stringify([{name:'bukti.pdf',url:'https://drive.google.com/file/d/test/view',folderUrl:"https://drive.google.com/drive/folders/batch-test"}]));return;}
+    response.end(request.url === '/Index.html' ? html.replace('<script>', '<script>var form, review, labels;window.google={script:{run:{withSuccessHandler:function(fn){return {withFailureHandler:function(){return {getEvidenceConfiguration:function(){fn({enabled:true})},uploadEvidence:function(){fn([{name:"bukti.pdf",url:"https://drive.google.com/file/d/test/view",folderUrl:"https://drive.google.com/drive/folders/batch-test"}])}}}}}}}};</script><script>') : harness);
   });
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
   let browser;

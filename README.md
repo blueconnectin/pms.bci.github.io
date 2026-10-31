@@ -70,3 +70,9 @@ Ikuti [hubungkan deployment Google dan Cloudflare](CONNECT_DEPLOYMENTS.md) untuk
 ## Detail pekerjaan
 
 Semua 11 jenis kategori Projek menggunakan detail tanggal pekerjaan (satu tanggal atau rentang), QTY/Jumlah positif, satuan Pcs/Meter/Buah, serta keterangan wajib. Meter menerima pecahan; Pcs/Buah menggunakan bilangan bulat. Operasional menggunakan tanggal pekerjaan (satu tanggal atau rentang), jenis pekerjaan Project/Maintenance, serta keterangan wajib. Tanggal akhir tidak boleh lebih awal dari tanggal mulai. Semua detail disertakan dalam ringkasan dan pesan WhatsApp; field jenis lain dinonaktifkan agar tidak ikut terkirim. Detail Sales, Manage Service, dan Reimburst tetap dipertahankan.
+
+## Format pesan WhatsApp dan folder bukti
+
+Judul pesan: **PENGAJUAN INVOICE BLUE CONNECT INDONESIA**. Pesan dibagi menjadi **1. Informasi pengajuan**, **2. Rekening penerima**, dan **3. Lampiran bukti pengajuan**. Semua detail kategori/pekerjaan masuk ke bagian informasi; rekening berada dalam bagian tersendiri.
+
+Untuk unggahan baru, aplikasi membuat satu subfolder per batch pengajuan di dalam folder bukti yang dikonfigurasi. Semua file pengajuan disimpan di subfolder itu. Ringkasan dan pesan WhatsApp cukup mencantumkan satu tautan subfolder, termasuk bila bukti hanya satu file. Folder tidak dibuat publik oleh aplikasi; admin tetap memerlukan akses yang diwarisi dari folder induk. Pengajuan lain memakai subfolder berbeda sehingga tautan tidak membuka seluruh arsip bukti. File pengajuan lama tidak dipindahkan atau dihapus. Percobaan ulang dengan cache aktif menggunakan kembali subfolder batch yang sama.

@@ -42,24 +42,27 @@ function uploadEvidence(input) {
   });
   if (total > maxTotal) throw new Error('Total lampiran maksimal 10 MB.');
   var digest = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, JSON.stringify(input.files));
-  var cacheKey = 'evidence-' + input.requestId + '-' + Utilities.base64EncodeWebSafe(digest);
+  var cacheKey = 'evidence-folder-v2-' + input.requestId + '-' + Utilities.base64EncodeWebSafe(digest);
   var lock = LockService.getScriptLock(); lock.waitLock(30000);
-  var created = [];
+  var created = [], batchFolder;
   try {
     var cache = CacheService.getScriptCache(), previous = cache.get(cacheKey);
     if (previous) return JSON.parse(previous);
     var folder;
     try {folder = DriveApp.getFolderById(folderId); folder.getName();}
     catch (error) {throw new Error('Folder bukti tidak dapat diakses. Admin perlu memeriksa UPLOAD_FOLDER_ID dan izin Drive.');}
+    batchFolder = folder.createFolder('Pengajuan-' + new Date().toISOString().slice(0,10) + '-' + input.requestId);
+    var folderUrl = batchFolder.getUrl();
     var result = files.map(function(file) {
-      var stored = folder.createFile(Utilities.newBlob(file.bytes,file.type,Utilities.getUuid() + '-' + file.name));
+      var stored = batchFolder.createFile(Utilities.newBlob(file.bytes,file.type,Utilities.getUuid() + '-' + file.name));
       created.push(stored);
-      return {name:file.name,url:stored.getUrl()};
+      return {name:file.name,url:stored.getUrl(),folderUrl:folderUrl};
     });
     cache.put(cacheKey,JSON.stringify(result),21600);
     return result;
   } catch (error) {
     created.forEach(function(file) {try {file.setTrashed(true);} catch (cleanupError) { /* Owner can remove partial files from the folder. */ }});
+    if (batchFolder) {try {batchFolder.setTrashed(true);} catch (cleanupFolderError) { /* Owner can remove incomplete batch folders. */ }}
     throw new Error('Unggah bukti gagal. Periksa konfigurasi folder dan otorisasi Drive, lalu coba lagi.');
   } finally {lock.releaseLock();}
 }

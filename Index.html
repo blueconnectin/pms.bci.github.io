@@ -254,7 +254,17 @@ function submissionEntries(data) {
  return entries;
 }
 function whatsappMessage(data) {
- return ['PENGAJUAN BLUE CONNECT','',...submissionEntries(data).map(([label,value]) => label + ': ' + value),'','Lampiran Bukti Pengajuan:',...(driveUploadsEnabled ? uploadedEvidence.map((file,index) => (index + 1) + '. ' + file.name + ': ' + file.url) : ['Foto/dokumen dilampirkan langsung di WhatsApp.']),'','Mohon diproses oleh admin proyek. Terima kasih.'].join('\n');
+ const entries = submissionEntries(data);
+ const accountLabels = ['Nama Bank','Nomor Rekening','Nama Pemilik Rekening'];
+ const information = entries.filter(([label]) => !accountLabels.includes(label));
+ const account = entries.filter(([label]) => accountLabels.includes(label));
+ const lines = rows => rows.map(([label,value]) => label + ': ' + value);
+ return ['*PENGAJUAN INVOICE BLUE CONNECT INDONESIA*','',
+  '*1. INFORMASI PENGAJUAN*',...lines(information),'',
+  '*2. REKENING PENERIMA*',...lines(account),'',
+  '*3. LAMPIRAN BUKTI PENGAJUAN*',
+  'Buka seluruh bukti (' + uploadedEvidence.length + ' file):',uploadedEvidence[0].folderUrl,'',
+  'Mohon diproses oleh admin proyek. Terima kasih.'].join('\n');
 }
 function updateProgress() {
  const fields = ['applicant','requestDate','bank','accountNumber','accountOwner'].concat(activeDetailInputs());
@@ -350,7 +360,7 @@ async function showReview() {
   try {
    const encoded = await Promise.all(files.map(readFile));
    uploadedEvidence = await uploadToDrive({requestId:uploadRequestId,files:encoded});
-   if (!Array.isArray(uploadedEvidence) || uploadedEvidence.length !== files.length || uploadedEvidence.some(file => !/^https:\/\/drive\.google\.com\//.test(file.url))) throw new Error('Tautan unggahan tidak valid. Silakan coba lagi.');
+   if (!Array.isArray(uploadedEvidence) || uploadedEvidence.length !== files.length || uploadedEvidence.some(file => !/^https:\/\/drive\.google\.com\//.test(file.url) || !/^https:\/\/drive\.google\.com\/drive\/folders\//.test(file.folderUrl || '') || file.folderUrl !== uploadedEvidence[0].folderUrl)) throw new Error('Tautan unggahan tidak valid. Silakan coba lagi.');
    uploadedFiles = files;
    form.querySelectorAll('.file-info small').forEach((label,i) => {label.textContent = (files[i].size / 1024 / 1024).toFixed(2) + ' MB · Tersimpan di Drive';});
    document.getElementById('status').textContent = '';
@@ -366,8 +376,7 @@ async function showReview() {
  }
  const title = document.createElement('dt');title.textContent = 'Bukti pengajuan';
  const links = document.createElement('dd');
- if (!driveUploadsEnabled) links.textContent = 'Lampirkan langsung di WhatsApp.';
- uploadedEvidence.forEach(file => {const link = document.createElement('a');link.href = file.url;link.target = '_blank';link.rel = 'noopener noreferrer';link.textContent = file.name;links.append(link,document.createElement('br'));});summary.append(title,links);
+ const folderLink = document.createElement('a');folderLink.href = uploadedEvidence[0].folderUrl;folderLink.target = '_blank';folderLink.rel = 'noopener noreferrer';folderLink.textContent = 'Buka seluruh bukti (' + uploadedEvidence.length + ' file)';links.append(folderLink);summary.append(title,links);
  review.hidden = false;
  form.hidden = true;
  document.getElementById('reviewTitle').focus();
