@@ -49,7 +49,7 @@ main{margin-top:24px}
 </section>
 </section><section class="form-block" aria-label="Rekening penerima"><h2 class="section-title"><span class="section-number">02</span>Rekening penerima</h2><p class="hint">Periksa nomor dan nama pemilik rekening dengan teliti.</p>
 <div class="grid"><div><label for="bank">Nama Bank<span class="required" aria-hidden="true">*</span></label><input id="bank" name="bank" placeholder="Contoh: BCA, BRI, Mandiri" maxlength="80" required></div><div><label for="accountNumber">Nomor Rekening<span class="required" aria-hidden="true">*</span></label><input id="accountNumber" name="accountNumber" type="text" inputmode="numeric" pattern="[0-9]{1,40}" maxlength="40" title="Masukkan nomor rekening menggunakan angka saja, tanpa spasi atau tanda hubung." placeholder="Nomor rekening tanpa spasi" required></div><div class="full"><label for="accountOwner">Nama Pemilik Rekening<span class="required" aria-hidden="true">*</span></label><input id="accountOwner" name="accountOwner" placeholder="Nama sesuai rekening bank" maxlength="120" required></div></div>
-</section><section id="uploadSection" class="form-block"><h2 class="section-title"><span class="section-number">03</span>Lampiran bukti pengajuan</h2><p class="hint" id="attachmentNotice">Pilih 1–3 file. Maksimal 5 MB per file, total 10 MB. JPG, PNG, WEBP, PDF, DOCX, atau XLSX.</p><label class="upload-zone" id="uploadZone" for="evidenceFiles"><span class="upload-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 18H5a4 4 0 0 1-.5-8A7 7 0 0 1 18 8a5 5 0 0 1 1 10h-2M12 21V11m-4 4 4-4 4 4"/></svg></span><span><strong>Pilih foto atau dokumen</strong><span class="drop-help"> atau seret file ke sini</span></span><small>JPG, PNG, WEBP, PDF, DOCX, XLSX · maksimal 3 file</small><input type="file" id="evidenceFiles" multiple required accept=".jpg,.jpeg,.png,.webp,.pdf,.docx,.xlsx" aria-label="Foto atau dokumen bukti" aria-describedby="attachmentNotice"></label><ul id="evidenceList" class="file-list" aria-live="polite"></ul><div class="notice">Lampiran diunggah ke Google Drive saat Anda memeriksa pengajuan. Tautannya dimasukkan ke pesan WhatsApp. Admin memerlukan akses ke folder bukti.</div><div id="evidenceConnectionStatus" class="connection-status" role="status" aria-live="polite">Memeriksa koneksi penyimpanan bukti…</div><button id="retryEvidenceButton" class="secondary retry-evidence" type="button" hidden>Coba hubungkan kembali</button></section>
+</section><section id="uploadSection" class="form-block"><h2 class="section-title"><span class="section-number">03</span>Lampiran bukti pengajuan</h2><p class="hint" id="attachmentNotice">Pilih 1–10 file. Maksimal 5 MB per file, total 10 MB. JPG, PNG, WEBP, PDF, DOCX, atau XLSX.</p><label class="upload-zone" id="uploadZone" for="evidenceFiles"><span class="upload-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 18H5a4 4 0 0 1-.5-8A7 7 0 0 1 18 8a5 5 0 0 1 1 10h-2M12 21V11m-4 4 4-4 4 4"/></svg></span><span><strong>Pilih foto atau dokumen</strong><span class="drop-help"> atau seret file ke sini</span></span><small>JPG, PNG, WEBP, PDF, DOCX, XLSX · maksimal 10 file. Pilih lagi untuk menambah lampiran.</small><input type="file" id="evidenceFiles" multiple required accept=".jpg,.jpeg,.png,.webp,.pdf,.docx,.xlsx" aria-label="Foto atau dokumen bukti" aria-describedby="attachmentNotice"></label><ul id="evidenceList" class="file-list" aria-live="polite"></ul><div class="notice">Lampiran diunggah ke Google Drive saat Anda memeriksa pengajuan. Tautannya dimasukkan ke pesan WhatsApp. Admin memerlukan akses ke folder bukti.</div><div id="evidenceConnectionStatus" class="connection-status" role="status" aria-live="polite">Memeriksa koneksi penyimpanan bukti…</div><button id="retryEvidenceButton" class="secondary retry-evidence" type="button" hidden>Coba hubungkan kembali</button></section>
 <div class="submit-area"><label class="check"><input type="checkbox" id="confirmation" required aria-describedby="attachmentNotice"><span id="confirmationText">Saya sudah memeriksa data rekening dan menyetujui penyimpanan bukti pengajuan di Google Drive.</span></label>
 <button id="reviewButton" class="primary" type="button" disabled><span id="reviewButtonLabel">Periksa Pengajuan</span> <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-5-5 5 5-5 5"/></svg></button>
 <p class="privacy"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 4 6v6c0 5 8 9 8 9s8-4 8-9V6z"/><path d="m9 12 2 2 4-4"/></svg><span>Bukti disimpan di Google Drive. Data rekening diteruskan ke WhatsApp saat Anda memilih tombol kirim.</span></p><p id="status" class="status" role="status" aria-live="polite">Memuat formulir…</p>
@@ -66,7 +66,7 @@ const form = document.getElementById('requestForm');
 const review = document.getElementById('reviewDialog');
 const evidenceInput = document.getElementById('evidenceFiles');
 let driveUploadsEnabled = true, evidenceReady = false;
-let uploadedEvidence = [], uploadedFiles = [], uploadRequestId = '', uploading = false;
+let uploadedEvidence = [], uploadedFiles = [], selectedEvidenceFiles = [], uploadRequestId = '', uploading = false;
 const labels = {applicant:'Nama Pemohon',requestDate:'Tanggal Pengajuan',requestType:'Jenis Pengajuan',bank:'Nama Bank',accountNumber:'Nomor Rekening',accountOwner:'Nama Pemilik Rekening'};
 function localDate(date) { return [date.getFullYear(),String(date.getMonth()+1).padStart(2,'0'),String(date.getDate()).padStart(2,'0')].join('-'); }
 document.getElementById('requestDate').value = localDate(new Date());
@@ -120,7 +120,7 @@ function validateFiles() {
  if (!driveUploadsEnabled) return true;
  const files = Array.from(evidenceInput.files);
  let message = '';
- if (!files.length || files.length > 3) message = 'Pilih 1–3 file bukti pengajuan.';
+ if (!files.length || files.length > 10) message = 'Pilih 1–10 file bukti pengajuan.';
  else if (files.some(file => !file.size || file.size > 5 * 1024 * 1024)) message = 'Ukuran file harus lebih dari nol dan maksimal 5 MB.';
  else if (files.reduce((total,file) => total + file.size,0) > 10 * 1024 * 1024) message = 'Total lampiran maksimal 10 MB.';
  else if (files.some(file => !/\.(jpg|jpeg|png|webp|pdf|docx|xlsx)$/i.test(file.name))) message = 'Gunakan JPG, PNG, WEBP, PDF, DOCX, atau XLSX.';
@@ -129,6 +129,10 @@ function validateFiles() {
  return !message;
 }
 evidenceInput.addEventListener('change',() => {
+ const combined = selectedEvidenceFiles.concat(Array.from(evidenceInput.files));
+ const seen = new Set();
+ selectedEvidenceFiles = combined.filter(file => {const key = JSON.stringify([file.name,file.size,file.lastModified,file.type]);if (seen.has(key)) return false;seen.add(key);return true;});
+ const selection = new DataTransfer();selectedEvidenceFiles.forEach(file => selection.items.add(file));evidenceInput.files = selection.files;
  uploadedEvidence = [];uploadedFiles = [];
  uploadRequestId = typeof crypto.randomUUID === 'function' ? crypto.randomUUID() : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,c => {const n = crypto.getRandomValues(new Uint8Array(1))[0] % 16;return (c === 'x' ? n : (n & 3) | 8).toString(16);});
  const list = document.getElementById('evidenceList');list.replaceChildren();
@@ -139,7 +143,7 @@ evidenceInput.addEventListener('change',() => {
  const name = document.createElement('strong');name.textContent = file.name;name.title = file.name;
  const size = document.createElement('small');size.textContent = (file.size / 1024 / 1024).toFixed(2) + ' MB · Siap diunggah';info.append(name,size);
  const remove = document.createElement('button');remove.type = 'button';remove.className = 'remove-file';remove.textContent = '×';remove.setAttribute('aria-label','Hapus ' + file.name);
- remove.addEventListener('click',() => {const selection = new DataTransfer();Array.from(evidenceInput.files).forEach((other,i) => {if (i !== index) selection.items.add(other);});evidenceInput.files = selection.files;evidenceInput.dispatchEvent(new Event('change',{bubbles:true}));});
+ remove.addEventListener('click',() => {const selection = new DataTransfer();Array.from(evidenceInput.files).forEach((other,i) => {if (i !== index) selection.items.add(other);});selectedEvidenceFiles = [];evidenceInput.files = selection.files;evidenceInput.dispatchEvent(new Event('change',{bubbles:true}));});
  item.append(icon,info,remove);list.append(item);
 });
  validateFiles();updateProgress();

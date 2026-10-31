@@ -8,7 +8,7 @@ Web App: https://script.google.com/macros/s/AKfycbzSlPMUFTn6WUINNiRJjF6sSQ_WvEeX
 
 Isi Nama Pemohon, Tanggal Pengajuan, Jenis Pengajuan (Sales, Manage Service, Reimburst, Operasional), Nama Bank, Nomor Rekening, dan Nama Pemilik Rekening. Nominal tidak diminta; admin mencantumkannya pada invoice.
 
-Setelah unggah Drive diaktifkan, pemohon memilih 1–3 bukti (JPG/JPEG, PNG, WEBP, PDF, DOCX, XLSX), maksimal 5 MB per file dan 10 MB total. Tombol **Periksa Pengajuan** mengunggah file, lalu menampilkan ringkasan beserta tautan bukti. Pemohon kemudian membuka WhatsApp dengan pesan terisi dan menekan **Kirim** sendiri. Lampiran berupa tautan Drive, bukan file media WhatsApp. Tidak ada pengiriman pesan otomatis.
+Setelah unggah Drive diaktifkan, pemohon memilih 1–10 bukti (JPG/JPEG, PNG, WEBP, PDF, DOCX, XLSX), maksimal 5 MB per file dan 10 MB total. Tombol **Periksa Pengajuan** mengunggah file, lalu menampilkan ringkasan beserta tautan bukti. Pemohon kemudian membuka WhatsApp dengan pesan terisi dan menekan **Kirim** sendiri. Lampiran berupa tautan Drive, bukan file media WhatsApp. Tidak ada pengiriman pesan otomatis.
 
 Bila penyimpanan Drive belum diotorisasi atau koneksinya gagal, kolom lampiran tetap terlihat dengan pesan masalah dan tombol coba kembali. Pengajuan diblokir sampai koneksi siap; aplikasi tidak mengalihkan lampiran menjadi manual di WhatsApp.
 

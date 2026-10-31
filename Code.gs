@@ -11,8 +11,8 @@ function doGet() {
 function uploadEvidence(input) {
   if (PropertiesService.getScriptProperties().getProperty('EVIDENCE_UPLOADS_READY') !== 'true') throw new Error('Admin perlu menjalankan authorizeEvidenceStorage terlebih dahulu.');
   var maxFile = 5 * 1024 * 1024, maxTotal = 10 * 1024 * 1024;
-  if (!input || !/^[a-f0-9-]{36}$/i.test(input.requestId || '') || !Array.isArray(input.files) || input.files.length < 1 || input.files.length > 3) {
-    throw new Error('Pilih 1–3 lampiran dengan total maksimal 10 MB.');
+  if (!input || !/^[a-f0-9-]{36}$/i.test(input.requestId || '') || !Array.isArray(input.files) || input.files.length < 1 || input.files.length > 10) {
+    throw new Error('Pilih 1–10 lampiran dengan total maksimal 10 MB.');
   }
   var folderId = PropertiesService.getScriptProperties().getProperty('UPLOAD_FOLDER_ID') || EVIDENCE_DEFAULT_FOLDER_ID_;
   if (!folderId) throw new Error('Folder bukti belum dikonfigurasi oleh admin.');
