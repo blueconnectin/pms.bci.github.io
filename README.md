@@ -39,3 +39,15 @@ Push source dan deployment adalah dua langkah berbeda. Setelah source diperbarui
 ## Sinkronisasi GitHub Actions
 
 Ikuti [panduan koneksi Google dan GitHub Secrets](CONNECT_APPS_SCRIPT.md) untuk mengaktifkan workflow. Sinkronisasi otomatis dan publikasi otomatis dinonaktifkan sampai variabel repositori terkait diaktifkan. Workflow mempertahankan manifest serta file remote lain, membuat versi cadangan sebelum push, dan memverifikasi source setelah unggah. Kredensial wajib disimpan di GitHub Secrets, bukan dalam repositori.
+
+## Pemeriksaan ringkasan di Apps Script
+
+Tombol **Periksa Pengajuan** tidak melakukan submit/navigasi. Ringkasan ditampilkan di panel dalam halaman yang sama, agar tetap berada di iframe Apps Script. Formulir baru dapat diperiksa setelah JavaScript selesai diinisialisasi; handler dibatasi dalam scope lokal agar tidak berbenturan dengan script pembungkus.
+
+Pengujian regresi browser (memerlukan Playwright dan Chromium yang tersedia di cloud environment):
+
+```sh
+node tests/whatsapp-form.browser.cjs
+```
+
+Pengujian memakai iframe sandbox, memeriksa validasi, ringkasan, edit, nomor rekening dengan nol di depan, dan URL WhatsApp tanpa mengirim pesan. Pengujian ini tidak menggantikan pemeriksaan URL `/exec` setelah deployment GitHub Actions berhasil.
