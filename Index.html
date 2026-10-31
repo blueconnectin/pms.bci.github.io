@@ -27,6 +27,7 @@ main{margin-top:24px}
 .reimbursement-hint{font-size:14px;line-height:1.7;color:#78879a;margin:0 0 18px}.reimbursement-row{padding:17px;border:1px solid #e1e9e6;border-radius:10px;margin-bottom:12px;background:#fbfdfc}.reimbursement-row-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;gap:12px}.reimbursement-row-title{font-size:14px;font-weight:600;color:#447163}.remove-reimbursement{min-height:32px;padding:5px 9px;color:#a55353;background:transparent;font-size:13px}.remove-reimbursement:disabled{opacity:.35;cursor:default}.add-reimbursement{width:100%;border:1px dashed #b8d6c8;background:#f3faf6;color:#137965}.reimbursement-total{display:flex;justify-content:space-between;gap:14px;padding-top:20px;margin-top:20px;border-top:1px solid #dfe9e3;font-size:16px;font-weight:600}.reimbursement-total output{color:#087f73;overflow-wrap:anywhere;min-width:0;text-align:right}@media(max-width:700px){.reimbursement-row .grid{grid-template-columns:1fr}.reimbursement-row{padding:14px}}
 .project-types{grid-template-columns:1fr 1fr}.project-types .type{flex-direction:row;align-items:center;gap:10px;padding:14px}.project-types .type span{padding-right:18px}.project-types .type input{top:18px}
 [name="requestType"][value="Pemasangan aksesoris KU"] + svg + span{overflow-wrap:anywhere}
+.project-request-select{font:inherit;width:100%;min-height:48px;padding:11px 13px;color:#21334d;background:#fff;border:1px solid #dce3ed;border-radius:8px;font-size:16px}.project-request-select:focus{outline:0;border-color:#6aaf99;box-shadow:0 0 0 3px #087f7310}
 </style>
 </head>
 <body>
@@ -37,14 +38,17 @@ main{margin-top:24px}
 <form id="requestForm" onsubmit="return false;">
 <section class="application-intro" aria-labelledby="applicationTitle">
 <div class="intro-heading"><span class="intro-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M8 13h8M8 17h5"/></svg></span><div><h1 id="applicationTitle">Formulir pengajuan Invoice</h1><p>Isi data pengajuan dan lampirkan bukti untuk admin proyek.</p></div></div>
-<div class="intro-completion"><div class="form-heading"><h2 id="completionLabel">Kelengkapan formulir</h2><span id="completionCount" class="form-badge">0 dari 9 terisi</span></div><div class="progress" role="progressbar" aria-label="Kelengkapan formulir" aria-valuemin="0" aria-valuemax="9" aria-valuenow="0"><span id="formProgress"></span></div></div>
+<div class="intro-completion"><div class="form-heading"><h2 id="completionLabel">Kelengkapan formulir</h2><span id="completionCount" class="form-badge">0 dari 10 terisi</span></div><div class="progress" role="progressbar" aria-label="Kelengkapan formulir" aria-valuemin="0" aria-valuemax="10" aria-valuenow="0"><span id="formProgress"></span></div></div>
 </section>
 <section class="form-block" aria-label="Informasi pengajuan"><h2 class="section-title"><span class="section-number">01</span>Informasi pengajuan</h2><p class="hint">Semua kolom wajib diisi.</p>
 <div class="grid">
 <div><label for="applicant">Nama Pemohon<span class="required" aria-hidden="true">*</span></label><input id="applicant" name="applicant" autocomplete="name" placeholder="Masukkan nama lengkap" maxlength="120" required></div>
 <div><label for="requestDate">Tanggal Pengajuan<span class="required" aria-hidden="true">*</span></label><input id="requestDate" name="requestDate" type="date" required></div>
 <fieldset class="full"><legend>Jenis proyek<span class="required" aria-hidden="true">*</span></legend><div class="types project-types"><label class="type"><input type="radio" name="projectType" value="FTTH" required><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 10 9-7 9 7M5 9v12h14V9M9 21v-7h6v7"/></svg><span>FTTH</span></label><label class="type"><input type="radio" name="projectType" value="FWA"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 9v12M8 21h8M8 6a6 6 0 0 0 0 9m8-9a6 6 0 0 1 0 9M5 3a10 10 0 0 0 0 15m14-15a10 10 0 0 1 0 15"/><circle cx="12" cy="8" r="1"/></svg><span>FWA</span></label></div></fieldset>
-<fieldset class="full"><legend>Jenis Pengajuan<span class="required" aria-hidden="true">*</span></legend><div class="types"><label class="type"><input type="radio" name="requestType" value="Sales" required><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 17 9 11l4 3 8-10M15 4h6v6"/></svg><span>Sales</span></label><label class="type"><input type="radio" name="requestType" value="Manage Service"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8m-4-4v4M7 9h4m-4 3h8"/></svg><span>Manage Service</span></label><label class="type"><input type="radio" name="requestType" value="Reimburst"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h10v18l-3-2-2 2-2-2-3 2zM10 7h4m-4 4h4m-4 4h2"/></svg><span>Reimburst</span></label><label class="type"><input type="radio" name="requestType" value="Operasional"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="7" width="18" height="14" rx="2"/><path d="M8 7V3h8v4M3 12h18m-11 0v3h4v-3"/></svg><span>Operasional</span></label><label class="type"><input type="radio" name="requestType" value="Pemasangan aksesoris KU"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 6a5 5 0 0 0-6 6l-5 5 4 4 5-5a5 5 0 0 0 6-6l-4 4-4-4 4-4z"/></svg><span>Pemasangan aksesoris KU</span></label></div></fieldset>
+<fieldset class="full"><legend>Kategori pengajuan<span class="required" aria-hidden="true">*</span></legend><div class="types project-types"><label class="type"><input type="radio" name="requestCategory" value="Projek" required><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 21h18M6 21V8h12v13M9 8V3h6v5M10 12h4M10 16h4"/></svg><span>Projek</span></label><label class="type"><input type="radio" name="requestCategory" value="Non Projek"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="6" width="18" height="15" rx="2"/><path d="M8 6V3h8v3M3 12h18M10 12v3h4v-3"/></svg><span>Non Projek</span></label></div></fieldset>
+<fieldset id="nonProjectRequests" class="full" hidden><legend>Jenis pengajuan Non Projek<span class="required" aria-hidden="true">*</span></legend><div class="types"><label class="type"><input type="radio" name="requestType" value="Sales" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 17 9 11l4 3 8-10M15 4h6v6"/></svg><span>Sales</span></label><label class="type"><input type="radio" name="requestType" value="Manage Service" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8m-4-4v4M7 9h4m-4 3h8"/></svg><span>Manage Service</span></label><label class="type"><input type="radio" name="requestType" value="Reimburst" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h10v18l-3-2-2 2-2-2-3 2zM10 7h4m-4 4h4m-4 4h2"/></svg><span>Reimburst</span></label><label class="type"><input type="radio" name="requestType" value="Operasional" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="7" width="18" height="14" rx="2"/><path d="M8 7V3h8v4M3 12h18m-11 0v3h4v-3"/></svg><span>Operasional</span></label></div></fieldset>
+<div id="projectRequests" class="full" hidden><label for="projectRequestType">Jenis pekerjaan projek<span class="required" aria-hidden="true">*</span></label><select id="projectRequestType" class="project-request-select" name="projectRequestType" disabled><option value="">Pilih jenis pekerjaan</option><option value="Instalasi ODC">Instalasi ODC</option><option value="Instalasi ODP">Instalasi ODP</option><option value="Instalasi Closure">Instalasi Closure</option><option value="Join Core">Join Core</option><option value="Instalasi OTB">Instalasi OTB</option><option value="Penarikan Kabel Feeder">Penarikan Kabel Feeder</option><option value="Penarikan Kabel Precon">Penarikan Kabel Precon</option><option value="Pemasangan Tiang">Pemasangan Tiang</option><option value="Pemasangan Aksesoris KU">Pemasangan Aksesoris KU</option><option value="Pemasangan X Frame 40 X 40">Pemasangan X Frame 40 X 40</option><option value="Pemasangan X Frame 80 X 80">Pemasangan X Frame 80 X 80</option></select></div>
+
 </div>
 <section id="salesDetails" class="sales-details" aria-labelledby="salesDetailsTitle" hidden>
 <h3 id="salesDetailsTitle">Detail pengajuan Sales</h3>
@@ -80,25 +84,43 @@ const review = document.getElementById('reviewDialog');
 const evidenceInput = document.getElementById('evidenceFiles');
 let driveUploadsEnabled = true, evidenceReady = false;
 let uploadedEvidence = [], uploadedFiles = [], selectedEvidenceFiles = [], uploadRequestId = '', uploading = false;
-const labels = {applicant:'Nama Pemohon',requestDate:'Tanggal Pengajuan',projectType:'Jenis proyek',requestType:'Jenis Pengajuan',bank:'Nama Bank',accountNumber:'Nomor Rekening',accountOwner:'Nama Pemilik Rekening'};
+const labels = {applicant:'Nama Pemohon',requestDate:'Tanggal Pengajuan',projectType:'Jenis proyek',requestCategory:'Kategori pengajuan',requestType:'Jenis Pengajuan',bank:'Nama Bank',accountNumber:'Nomor Rekening',accountOwner:'Nama Pemilik Rekening'};
 function localDate(date) { return [date.getFullYear(),String(date.getMonth()+1).padStart(2,'0'),String(date.getDate()).padStart(2,'0')].join('-'); }
 document.getElementById('requestDate').value = localDate(new Date());
 document.getElementById('year').textContent = new Date().getFullYear();
 function requestData() {
   const data = Object.fromEntries(new FormData(form));
+  data.requestType = selectedRequestType();
   for (const key of Object.keys(labels)) data[key] = (data[key] || '').trim();
   if (isReimbursement()) data.reimbursementItems = reimbursementRows().map(row => ({object:row.querySelector('[data-reimbursement-object]').value.trim(),amount:Number(row.querySelector('[data-reimbursement-amount]').value)}));
   return data;
 }
 function displayDate(value) { const [year,month,day]=value.split('-'); return `${day}/${month}/${year}`; }
+function selectedRequestType() {
+ const category = form.querySelector('[name="requestCategory"]:checked')?.value;
+ if (category === 'Projek') return form.elements.projectRequestType.value;
+ if (category === 'Non Projek') return form.querySelector('[name="requestType"]:checked')?.value || '';
+ return '';
+}
+function syncRequestCategory(resetChoice) {
+ const category = form.querySelector('[name="requestCategory"]:checked')?.value;
+ const nonProject = category === 'Non Projek', project = category === 'Projek';
+ document.getElementById('nonProjectRequests').hidden = !nonProject;
+ document.getElementById('projectRequests').hidden = !project;
+ form.querySelectorAll('[name="requestType"]').forEach(input => {input.disabled = !nonProject;input.required = nonProject;if (resetChoice) input.checked = false;});
+ form.elements.projectRequestType.disabled = !project;
+ form.elements.projectRequestType.required = project;
+ if (resetChoice) form.elements.projectRequestType.value = '';
+ syncSalesDetails();
+}
 const salesNote = 'Jumlah aktual akan dihitung berdasarkan hasil rekonsiliasi dengan admin proyek.';
 const salesInputs = ['salesPeriodStart','salesPeriodEnd','salesCount'];
 const manageInputs = ['managePeriodStart','managePeriodEnd'];
-function isManageService() {return form.querySelector('[name="requestType"]:checked')?.value === 'Manage Service';}
+function isManageService() {return selectedRequestType() === 'Manage Service';}
 function activeDetailInputs() {return isSales() ? salesInputs : (isManageService() ? manageInputs : (isReimbursement() ? reimbursementRows().flatMap(row => Array.from(row.querySelectorAll('input'),input => input.name)) : []));}
-function isSales() {return form.querySelector('[name="requestType"]:checked')?.value === 'Sales';}
+function isSales() {return selectedRequestType() === 'Sales';}
 let reimbursementSequence = 0;
-function isReimbursement() {return form.querySelector('[name="requestType"]:checked')?.value === 'Reimburst';}
+function isReimbursement() {return selectedRequestType() === 'Reimburst';}
 function reimbursementRows() {return Array.from(document.querySelectorAll('#reimbursementRows .reimbursement-row'));}
 function rupiah(value) {return new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',maximumFractionDigits:0}).format(value);}
 function updateReimbursementTotal() {
@@ -170,16 +192,16 @@ function validateSalesDetails() {
 }
 function submissionEntries(data) {
  const entries = Object.entries(labels).map(([key,label]) => [label,key === 'requestDate' ? displayDate(data[key]) : data[key]]);
- if (data.requestType === 'Sales') entries.splice(4,0,
+ if (data.requestType === 'Sales') entries.splice(5,0,
   ['Periode pengajuan',displayDate(data.salesPeriodStart) + ' — ' + displayDate(data.salesPeriodEnd)],
   ['Jumlah sales',data.salesCount],['Catatan sales',salesNote]);
- if (data.requestType === 'Manage Service') entries.splice(4,0,['Periode penagihan',displayDate(data.managePeriodStart) + ' — ' + displayDate(data.managePeriodEnd)]);
+ if (data.requestType === 'Manage Service') entries.splice(5,0,['Periode penagihan',displayDate(data.managePeriodStart) + ' — ' + displayDate(data.managePeriodEnd)]);
  if (data.requestType === 'Reimburst') {
   const items = data.reimbursementItems || [];
   const detail = [];
   items.forEach((item,i) => {detail.push(['Objek reimburst ' + (i+1),item.object],['Nominal ' + (i+1),rupiah(item.amount)]);});
   detail.push(['Total reimburst',rupiah(items.reduce((total,item) => total + item.amount,0))]);
-  entries.splice(4,0,...detail);
+  entries.splice(5,0,...detail);
  }
  return entries;
 }
@@ -188,17 +210,17 @@ function whatsappMessage(data) {
 }
 function updateProgress() {
  const fields = ['applicant','requestDate','bank','accountNumber','accountOwner'].concat(activeDetailInputs());
- const completed = fields.filter(key => form.elements[key].value.trim() && form.elements[key].validity.valid).length + Number(!!form.querySelector('[name="requestType"]:checked')) + Number(!!form.querySelector('[name="projectType"]:checked')) + Number(document.getElementById('confirmation').checked) + Number(driveUploadsEnabled && evidenceInput.files.length > 0 && evidenceInput.validity.valid);
- const total = (driveUploadsEnabled ? 9 : 8) + activeDetailInputs().length;
+ const completed = fields.filter(key => form.elements[key].value.trim() && form.elements[key].validity.valid).length + Number(!!selectedRequestType()) + Number(!!form.querySelector('[name="requestCategory"]:checked')) + Number(!!form.querySelector('[name="projectType"]:checked')) + Number(document.getElementById('confirmation').checked) + Number(driveUploadsEnabled && evidenceInput.files.length > 0 && evidenceInput.validity.valid);
+ const total = (driveUploadsEnabled ? 10 : 9) + activeDetailInputs().length;
  document.getElementById('completionCount').textContent = completed + ' dari ' + total + ' terisi';
  document.getElementById('formProgress').style.width = (completed / total * 100) + '%';
  document.querySelector('[role="progressbar"]').setAttribute('aria-valuemax',total);
  document.querySelector('[role="progressbar"]').setAttribute('aria-valuenow',completed);
 }
 form.addEventListener('input',event=>{event.target.setCustomValidity('');validateSalesDetails();document.getElementById('status').textContent='';updateProgress();});
-form.addEventListener('change',event=>{if (event.target.name === 'requestType') syncSalesDetails();validateSalesDetails();updateProgress();});
+form.addEventListener('change',event=>{if (event.target.name === 'requestCategory') syncRequestCategory(true);else if (event.target.name === 'requestType' || event.target.name === 'projectRequestType') syncSalesDetails();validateSalesDetails();updateProgress();});
 addReimbursementRow(false);
-syncSalesDetails();
+syncRequestCategory(false);
 updateProgress();
 function validateFiles() {
  if (!driveUploadsEnabled) return true;
@@ -274,7 +296,7 @@ async function showReview() {
   uploading = true;
   form.setAttribute('aria-busy','true');
   document.getElementById('reviewButtonLabel').textContent = 'Mengunggah bukti…';
-  const controls = Array.from(form.querySelectorAll('input,button'));
+  const controls = Array.from(form.querySelectorAll('input,select,button'));
   controls.forEach(control => control.disabled = true);
   document.getElementById('status').textContent = 'Mengunggah bukti ke Google Drive… Jangan tutup halaman ini.';
   try {
@@ -287,7 +309,7 @@ async function showReview() {
   } catch (error) {
    document.getElementById('status').textContent = error.message || 'Unggah gagal. Silakan coba lagi.';
    return;
-  } finally {uploading = false;form.setAttribute('aria-busy','false');document.getElementById('reviewButtonLabel').textContent = 'Periksa Pengajuan';controls.forEach(control => control.disabled = false);syncSalesDetails();}
+  } finally {uploading = false;form.setAttribute('aria-busy','false');document.getElementById('reviewButtonLabel').textContent = 'Periksa Pengajuan';controls.forEach(control => control.disabled = false);syncRequestCategory(false);}
  }
  const data=requestData();const summary=document.getElementById('summary');summary.replaceChildren();
  for(const [label,value] of submissionEntries(data)) {

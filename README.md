@@ -6,7 +6,7 @@ Web App: https://script.google.com/macros/s/AKfycbzSlPMUFTn6WUINNiRJjF6sSQ_WvEeX
 
 ## Alur
 
-Isi Nama Pemohon, Tanggal Pengajuan, Jenis Pengajuan (Sales, Manage Service, Reimburst, Operasional), Nama Bank, Nomor Rekening, dan Nama Pemilik Rekening. Khusus Reimburst, pemohon mengisi objek pengeluaran dan nominal Rupiah pada rincian yang dapat ditambah/dihapus. Total dihitung otomatis dan diteruskan ke ringkasan serta pesan WhatsApp. Jenis pengajuan lain tidak meminta nominal.
+Isi Nama Pemohon, Tanggal Pengajuan, Jenis proyek (FTTH/FWA), kategori dan jenis pengajuan, Nama Bank, Nomor Rekening, serta Nama Pemilik Rekening. Non Projek berisi Sales, Manage Service, Reimburst, dan Operasional. Projek berisi 11 pilihan pekerjaan jaringan yang ditetapkan pada formulir. Khusus Reimburst, objek dan nominal pengeluaran dapat ditambah/dihapus; totalnya dihitung otomatis dan diteruskan ke ringkasan serta pesan WhatsApp.
 
 Setelah unggah Drive diaktifkan, pemohon memilih 1–10 bukti (JPG/JPEG, PNG, WEBP, PDF, DOCX, XLSX), maksimal 5 MB per file dan 10 MB total. Tombol **Periksa Pengajuan** mengunggah file, lalu menampilkan ringkasan beserta tautan bukti. Pemohon kemudian membuka WhatsApp dengan pesan terisi dan menekan **Kirim** sendiri. Lampiran berupa tautan Drive, bukan file media WhatsApp. Tidak ada pengiriman pesan otomatis.
 

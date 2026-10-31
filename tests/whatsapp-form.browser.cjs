@@ -28,7 +28,7 @@ const {chromium} = require('playwright');
       assert.equal(await frame.locator('#reviewDialog').isVisible(),false);
       assert.equal(await frame.locator('#requestForm').isVisible(),true);
       for (const [id,value] of Object.entries({applicant:'Petugas & Tim',requestDate:'2026-10-31',bank:'BCA',accountNumber:'0012345678',accountOwner:'Pemilik <Uji>'})) await frame.locator('#'+id).fill(value);
-      await frame.getByRole('radio',{name:'Operasional',exact:true}).check();
+      await frame.getByRole('radio',{name:'Non Projek',exact:true}).check();await frame.getByRole('radio',{name:'Operasional',exact:true}).check();
       await frame.locator('#confirmation').check();await frame.getByRole('radio',{name:'FTTH',exact:true}).check();
       await frame.locator('#evidenceFiles').setInputFiles({name:'bukti.pdf',mimeType:'application/pdf',buffer:Buffer.from('%PDF-test')});
       await frame.locator('#reviewButton').click();
