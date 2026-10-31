@@ -17,6 +17,11 @@ function evidenceFolderName_(metadata) {
   return name + ' - ' + type + ' - ' + date;
 }
 
+function assertEvidenceEditable_(folderId) {
+  if (PropertiesService.getScriptProperties().getProperty('PORTAL_AUTH_REQUIRED') !== 'true') return;
+  var binding=portalGet_('Bukti',folderId);
+  if (binding) {var invoice=portalGet_('Invoice',binding.invoiceId);if(invoice&&['DRAFT','REVISION'].indexOf(invoice.status)<0)throw new Error('Bukti pengajuan yang telah diajukan tidak dapat diubah.');}
+}
 function evidenceFileName_(folderName,index,extension) {
   return folderName + ' - Lampiran ' + ('0' + (index+1)).slice(-2) + '.' + extension.toLowerCase();
 }
@@ -43,6 +48,10 @@ function renameEvidenceBatch_(folder,name,manifest) {
 
 /** Uploads evidence into the admin-configured folder. Never grants public access. */
 function uploadEvidence(input) {
+  if (PropertiesService.getScriptProperties().getProperty('PORTAL_AUTH_REQUIRED') === 'true') throw new Error('Silakan gunakan portal payment.blueconnect.id dan masuk ke akun Anda.');
+  return uploadEvidence_(input);
+}
+function uploadEvidence_(input) {
   if (PropertiesService.getScriptProperties().getProperty('EVIDENCE_UPLOADS_READY') !== 'true') throw new Error('Admin perlu menjalankan authorizeEvidenceStorage terlebih dahulu.');
   var maxFile = 5 * 1024 * 1024, maxTotal = 10 * 1024 * 1024;
   if (!input || !/^[a-f0-9-]{36}$/i.test(input.requestId || '') || !Array.isArray(input.files) || input.files.length < 1 || input.files.length > 10) {
@@ -86,6 +95,7 @@ function uploadEvidence(input) {
       var cached = JSON.parse(previous);
       if (input.metadata) {
         var cachedFolderId = cached[0].folderUrl.match(/\/folders\/([A-Za-z0-9_-]+)/)[1];
+        assertEvidenceEditable_(cachedFolderId);
         var cachedManifest = evidenceFileManifest_(cached);
         renameEvidenceBatch_(DriveApp.getFolderById(cachedFolderId),requestedFolderName,cachedManifest);
         cached.forEach(function(item,index) {item.name = evidenceFileName_(requestedFolderName,index,cachedManifest[index].extension);});
@@ -119,6 +129,10 @@ function uploadEvidence(input) {
 
 /** Renames only a recently uploaded folder owned by this unguessable upload session. */
 function updateEvidenceFolder(input) {
+  if (PropertiesService.getScriptProperties().getProperty('PORTAL_AUTH_REQUIRED') === 'true') throw new Error('Silakan gunakan portal payment.blueconnect.id dan masuk ke akun Anda.');
+  return updateEvidenceFolder_(input);
+}
+function updateEvidenceFolder_(input) {
   if (!input || !/^[a-f0-9-]{36}$/i.test(input.requestId || '')) throw new Error('Sesi unggah tidak valid.');
   var match = String(input.folderUrl || '').match(/^https:\/\/drive\.google\.com\/drive\/folders\/([A-Za-z0-9_-]+)(?:\?.*)?$/);
   if (!match) throw new Error('Tautan folder bukti tidak valid.');
@@ -130,6 +144,7 @@ function updateEvidenceFolder(input) {
     var root = PropertiesService.getScriptProperties().getProperty('UPLOAD_FOLDER_ID') || EVIDENCE_DEFAULT_FOLDER_ID_;
     while (parents.hasNext()) if (parents.next().getId() === root) allowed = true;
     if (!allowed) throw new Error('Folder tidak berada di penyimpanan bukti pengajuan.');
+    assertEvidenceEditable_(match[1]);
     var manifest = CacheService.getScriptCache().get('evidence-files-' + match[1]);
     if (!manifest) throw new Error('Sesi urutan lampiran kedaluwarsa. Pilih ulang lampiran.');
     renameEvidenceBatch_(folder,name,JSON.parse(manifest));
@@ -167,10 +182,24 @@ function doPost(event) {
     for (var i = 0; i < expected.length; i++) mismatch |= expected.charCodeAt(i) ^ envelope.signature.toLowerCase().charCodeAt(i);
     if (mismatch) throw new Error('Tanda tangan permintaan tidak valid.');
     var payload = JSON.parse(envelope.payload);
-    if (payload.action === 'config') response = {ok:true,data:getEvidenceConfiguration()};
-    else if (payload.action === 'upload') response = {ok:true,data:uploadEvidence(payload.input)};
-    else if (payload.action === 'record') response = {ok:true,data:saveSubmissionRecord(payload.input)};
-    else if (payload.action === 'renameEvidence') response = {ok:true,data:updateEvidenceFolder(payload.input)};
+    if (payload.action === 'portalAuth') return portalJson_(portalAuth_(payload.input.action,payload.input));
+    if (payload.action === 'portal') return portalJson_(portalDispatch_(payload.input.action,payload.input,payload.actor));
+    var actor = null;
+    if (payload.actor) actor = portalActor_(payload.actor);
+    else if (payload.action !== 'config' && PropertiesService.getScriptProperties().getProperty('PORTAL_AUTH_REQUIRED') === 'true') throw new Error('Silakan masuk melalui portal.');
+    if (actor && payload.action !== 'config') {
+      if (!portalComplete_(actor.profile)) throw new Error('Lengkapi Profil Saya terlebih dahulu.');
+      if (payload.input.metadata) payload.input.metadata.applicant = actor.profile.name;
+    }
+    if (payload.action === 'config') {
+      var config = getEvidenceConfiguration();
+      config.portalAuthRequired = PropertiesService.getScriptProperties().getProperty('PORTAL_AUTH_REQUIRED') === 'true';
+      if (actor) {config.portalEnabled=true;config.profile=actor.profile;config.recordingEnabled=false;}
+      response = {ok:true,data:config};
+    }
+    else if (payload.action === 'upload') response = {ok:true,data:uploadEvidence_(payload.input)};
+    else if (payload.action === 'record' && !actor) response = {ok:true,data:saveSubmissionRecord_(payload.input)};
+    else if (payload.action === 'renameEvidence') response = {ok:true,data:updateEvidenceFolder_(payload.input)};
     else throw new Error('Aksi tidak didukung.');
   } catch (error) {
     response = {ok:false,error:String(error.message || 'Permintaan gagal.')};
@@ -250,6 +279,10 @@ function normalizeRecord_(data) {
 }
 /** Idempotent upsert of a reviewed draft. It does not claim a WhatsApp message was sent. */
 function saveSubmissionRecord(input) {
+  if (PropertiesService.getScriptProperties().getProperty('PORTAL_AUTH_REQUIRED') === 'true') throw new Error('Silakan gunakan portal payment.blueconnect.id dan masuk ke akun Anda.');
+  return saveSubmissionRecord_(input);
+}
+function saveSubmissionRecord_(input) {
   var props = PropertiesService.getScriptProperties(), id = props.getProperty('SUBMISSION_SPREADSHEET_ID');
   if (!id || props.getProperty('SUBMISSION_LOG_READY') !== 'true') throw new Error('Catatan Sheets belum diaktifkan oleh admin.');
   if (!input || !/^[a-f0-9-]{36}$/i.test(input.id || '') || JSON.stringify(input).length > 40000) throw new Error('Data catatan tidak valid atau terlalu besar.');
@@ -274,3 +307,5 @@ function saveSubmissionRecord(input) {
     SpreadsheetApp.flush();return {id:input.id,savedAt:now};
   } finally {lock.releaseLock();}
 }
+
+function portalJson_(data) {return ContentService.createTextOutput(JSON.stringify({ok:true,data:data})).setMimeType(ContentService.MimeType.JSON);}

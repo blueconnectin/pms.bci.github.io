@@ -3,6 +3,7 @@ import {execFileSync} from 'node:child_process';
 // Publish only the browser application, never repository files or credentials.
 await fs.mkdir('public',{recursive:true});
 await fs.writeFile('public/index.html',await fs.readFile('Index.html'));
+await fs.writeFile('public/portal.html',await fs.readFile('Portal.html'));
 let commit = process.env.GITHUB_SHA || process.env.CF_PAGES_COMMIT_SHA;
 if (!commit) {try {commit = execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim();} catch {commit = 'local';}}
 await fs.writeFile('public/version.json',JSON.stringify({commit})+'\n');

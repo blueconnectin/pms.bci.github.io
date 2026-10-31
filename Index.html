@@ -36,12 +36,12 @@ main{margin-top:24px}
 <main>
 
 <section class="card" aria-label="Formulir pengajuan">
-<form id="requestForm" onsubmit="return false;">
+<p id="applicationRedirect" class="notice" hidden>Pengajuan kini menggunakan akun. Buka <a href="https://payment.blueconnect.id" target="_blank" rel="noopener noreferrer">portal invoice</a> untuk masuk.</p><form id="requestForm" onsubmit="return false;">
 <section class="application-intro" aria-labelledby="applicationTitle">
 <div class="intro-heading"><span class="intro-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M8 13h8M8 17h5"/></svg></span><div><h1 id="applicationTitle">Formulir pengajuan Invoice</h1><p>Isi data pengajuan dan lampirkan bukti untuk admin proyek.</p></div></div>
 <div class="intro-completion"><div class="form-heading"><h2 id="completionLabel">Kelengkapan formulir</h2><span id="completionCount" class="form-badge">0 dari 10 terisi</span></div><div class="progress" role="progressbar" aria-label="Kelengkapan formulir" aria-valuemin="0" aria-valuemax="10" aria-valuenow="0"><span id="formProgress"></span></div></div>
 </section>
-<section class="form-block" aria-label="Informasi pengajuan"><h2 class="section-title"><span class="section-number">01</span>Informasi pengajuan</h2><p class="hint">Semua kolom wajib diisi.</p>
+<p id="profileAutofillNote" class="notice" hidden>Identitas dan rekening diambil dari Profil Saya. Ubah profil melalui menu portal bila ada koreksi.</p><section class="form-block" aria-label="Informasi pengajuan"><h2 class="section-title"><span class="section-number">01</span>Informasi pengajuan</h2><p class="hint">Semua kolom wajib diisi.</p>
 <div class="grid">
 <div><label for="applicant">Nama Pemohon<span class="required" aria-hidden="true">*</span></label><input id="applicant" name="applicant" autocomplete="name" placeholder="Masukkan nama lengkap" maxlength="120" required></div>
 <div><label for="requestDate">Tanggal Pengajuan<span class="required" aria-hidden="true">*</span></label><input id="requestDate" name="requestDate" type="date" required></div>
@@ -74,7 +74,7 @@ main{margin-top:24px}
 <button id="reviewButton" class="primary" type="button" disabled><span id="reviewButtonLabel">Periksa Pengajuan</span> <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-5-5 5 5-5 5"/></svg></button>
 <p class="privacy"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 4 6v6c0 5 8 9 8 9s8-4 8-9V6z"/><path d="m9 12 2 2 4-4"/></svg><span>Bukti disimpan di Google Drive. Jika pencatatan otomatis aktif, data pengajuan dan rekening juga dicatat sebelum WhatsApp dibuka.</span></p><p id="status" class="status" role="status" aria-live="polite">Memuat formulir…</p>
 </div></form>
-<section id="reviewDialog" class="review-panel" aria-labelledby="reviewTitle" hidden><div class="review-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 12 4 4 8-8"/></svg></div><h2 id="reviewTitle" tabindex="-1">Periksa pengajuan Anda</h2><p>Pastikan data berikut sudah benar sebelum membuka WhatsApp admin.</p><dl class="summary" id="summary"></dl><div class="notice"><div><strong id="reviewEvidenceTitle">Bukti pengajuan</strong><span id="reviewEvidenceText">Lampirkan bukti langsung di WhatsApp, lalu tekan Kirim.</span></div></div><p id="recordStatus" class="status" role="status" aria-live="polite"></p><div class="actions"><button id="editButton" class="secondary" type="button">Ubah data</button><button id="whatsappButton" class="primary" type="button">Kirim ke WhatsApp Admin ↗</button></div></section>
+<section id="reviewDialog" class="review-panel" aria-labelledby="reviewTitle" hidden><div class="review-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 12 4 4 8-8"/></svg></div><h2 id="reviewTitle" tabindex="-1">Periksa pengajuan Anda</h2><p>Pastikan data berikut sudah benar sebelum membuka WhatsApp admin.</p><dl class="summary" id="summary"></dl><div class="notice"><div><strong id="reviewEvidenceTitle">Bukti pengajuan</strong><span id="reviewEvidenceText">Lampirkan bukti langsung di WhatsApp, lalu tekan Kirim.</span></div></div><section id="portalPricePreview" hidden></section><p id="recordStatus" class="status" role="status" aria-live="polite"></p><div class="actions"><button id="editButton" class="secondary" type="button">Ubah data</button><button id="whatsappButton" class="primary" type="button">Kirim ke WhatsApp Admin ↗</button></div></section>
 <noscript><p class="notice">Aktifkan JavaScript pada browser untuk memeriksa pengajuan dan membuka WhatsApp.</p></noscript></section>
 </main><footer><span>© <span id="year"></span> PT Blue Connect Indonesia. All rights reserved.</span><span>Portal Pengajuan</span></footer>
 
@@ -85,6 +85,7 @@ const ADMIN_WHATSAPP = '6288223062197';
 const form = document.getElementById('requestForm');
 const review = document.getElementById('reviewDialog');
 const evidenceInput = document.getElementById('evidenceFiles');
+let portalMode = false, portalDraftId = '', portalExistingEvidence = false, portalDraftLoaded = false;
 let driveUploadsEnabled = true, evidenceReady = false, recordingEnabled = false;
 let submissionRecordId = '', lastSavedSnapshot = '', recordFinalized = false, uploadedFolderMetadata = '';
 let uploadedEvidence = [], uploadedFiles = [], selectedEvidenceFiles = [], uploadRequestId = '', uploading = false;
@@ -282,6 +283,7 @@ addReimbursementRow(false);
 syncRequestCategory(false);
 updateProgress();
 function validateFiles() {
+ if (portalMode && portalExistingEvidence && !evidenceInput.files.length) return true;
  if (!driveUploadsEnabled) return true;
  const files = Array.from(evidenceInput.files);
  let message = '';
@@ -294,6 +296,7 @@ function validateFiles() {
  return !message;
 }
 evidenceInput.addEventListener('change',() => {
+ portalExistingEvidence = false;evidenceInput.required = true;
  const combined = selectedEvidenceFiles.concat(Array.from(evidenceInput.files));
  const seen = new Set();
  selectedEvidenceFiles = combined.filter(file => {const key = JSON.stringify([file.name,file.size,file.lastModified,file.type]);if (seen.has(key)) return false;seen.add(key);return true;});
@@ -325,6 +328,7 @@ function callBackend(method,payload) {
  if (window.google && google.script && google.script.run) {
   return new Promise((resolve,reject) => {
    const rpc = google.script.run.withSuccessHandler(resolve).withFailureHandler(reject);
+   if (method === 'portalAction') return reject(new Error('Gunakan portal payment.blueconnect.id.'));
    if (method === 'uploadEvidence') rpc.uploadEvidence(payload);
    else if (method === 'saveSubmissionRecord') rpc.saveSubmissionRecord(payload);
    else if (method === 'updateEvidenceFolder') rpc.updateEvidenceFolder(payload);
@@ -332,7 +336,7 @@ function callBackend(method,payload) {
   });
  }
  const isConfig = method === 'getEvidenceConfiguration';
- return fetch(isConfig ? '/api/config' : (method === 'saveSubmissionRecord' ? '/api/submissions' : (method === 'updateEvidenceFolder' ? '/api/evidence-folder' : '/api/evidence')),{
+ return fetch(isConfig ? '/api/config' : (method === 'portalAction' ? '/api/portal' : (method === 'saveSubmissionRecord' ? '/api/submissions' : (method === 'updateEvidenceFolder' ? '/api/evidence-folder' : '/api/evidence'))),{
   method:isConfig ? 'GET' : 'POST',
   headers:isConfig ? {} : {'Content-Type':'application/json'},
   body:isConfig ? undefined : JSON.stringify(payload),
@@ -377,7 +381,7 @@ async function showReview() {
    return;
   } finally {uploading = false;form.setAttribute('aria-busy','false');document.getElementById('reviewButtonLabel').textContent = 'Periksa Pengajuan';controls.forEach(control => control.disabled = false);syncRequestCategory(false);}
  }
- if (uploadedFolderMetadata !== metadataSnapshot) {
+ if (!portalMode && uploadedFolderMetadata !== metadataSnapshot) {
   const controls = Array.from(form.querySelectorAll('input,select,textarea,button'));
   uploading = true;controls.forEach(control => control.disabled = true);
   document.getElementById('status').textContent = 'Memperbarui nama folder bukti…';
@@ -390,7 +394,22 @@ async function showReview() {
  }
  const data = requestData();
  const recordStatus = document.getElementById('recordStatus');
- if (recordingEnabled) {
+ if (portalMode) {
+  if (!portalDraftId) portalDraftId = newRecordId();
+  const controls = Array.from(form.querySelectorAll('input,select,textarea,button'));
+  uploading = true;controls.forEach(control => control.disabled = true);
+  document.getElementById('status').textContent = 'Menyimpan draft invoice…';
+  try {
+   const draft = await callBackend('portalAction',{action:'draft',id:portalDraftId,data,folderUrl:uploadedEvidence[0].folderUrl,uploadRequestId});
+   Object.assign(data,draft.data);uploadedEvidence=draft.evidence;
+   const box=document.getElementById('portalPricePreview');box.replaceChildren();
+   const heading=document.createElement('h3');heading.textContent='Nilai invoice';box.append(heading);
+   draft.items.forEach(item=>{const row=document.createElement('p');row.textContent=item.description+' · '+item.qty+' '+item.unit+' × '+(item.price==null?'Tarif belum tersedia':rupiah(item.price))+' = '+(item.amount==null?'Menunggu admin':rupiah(item.amount));box.append(row);});
+   const total=document.createElement('strong');total.textContent=draft.total==null?'Tarif belum lengkap. Admin perlu menetapkan nilai sebelum persetujuan.':'Total: '+rupiah(draft.total);box.append(total);
+   recordStatus.textContent='Draft tersimpan. Pilih Ajukan invoice untuk mengirimkannya ke review admin.';document.getElementById('status').textContent='';
+  } catch(error){document.getElementById('status').textContent=error.message||'Draft belum tersimpan.';return;}
+  finally{uploading=false;controls.forEach(control=>control.disabled=false);syncRequestCategory(false);}
+ } else if (recordingEnabled) {
   const snapshot = JSON.stringify({data,folderUrl:uploadedEvidence[0].folderUrl,fileCount:uploadedEvidence.length});
   if (snapshot !== lastSavedSnapshot) {
    if (!submissionRecordId || recordFinalized) {submissionRecordId = newRecordId();recordFinalized = false;}
@@ -430,8 +449,14 @@ function closeReview() {
  document.getElementById('reviewButton').focus();
 }
 document.getElementById('editButton').addEventListener('click',closeReview);
-document.getElementById('whatsappButton').addEventListener('click',()=>{
+document.getElementById('whatsappButton').addEventListener('click',async()=>{
  if(!form.reportValidity()) {closeReview();return;}
+ if (portalMode) {
+  const button=document.getElementById('whatsappButton');button.disabled=true;
+  try {await callBackend('portalAction',{action:'submit',id:portalDraftId});document.getElementById('recordStatus').textContent='Invoice diajukan dan menunggu review admin.';window.parent.postMessage({type:'invoice-submitted'},window.location.origin);}
+  catch(error){document.getElementById('recordStatus').textContent=error.message||'Pengajuan belum berhasil.';button.disabled=false;}
+  return;
+ }
  recordFinalized = true;
  const url = 'https://wa.me/' + ADMIN_WHATSAPP + '?text=' + encodeURIComponent(whatsappMessage(requestData()));
  // A real click opens WhatsApp; no API key, backend, or automatic send is involved.
@@ -441,19 +466,48 @@ document.getElementById('whatsappButton').addEventListener('click',()=>{
 document.getElementById('status').textContent = '';
 document.getElementById('reviewButton').disabled = false;
 function configureEvidence(config,reason) {
+ if (config && config.portalAuthRequired && !config.portalEnabled) {form.hidden=true;document.getElementById('applicationRedirect').hidden=false;return;}
+ portalMode = !!(config && config.portalEnabled);
+ if (portalMode && config.profile) {
+  const p=config.profile;
+  for(const [key,value]of Object.entries({applicant:p.name,bank:p.bank,accountNumber:p.accountNumber,accountOwner:p.accountOwner})){form.elements[key].value=value||'';form.elements[key].readOnly=true;}
+  document.getElementById('profileAutofillNote').hidden=false;
+  document.getElementById('whatsappButton').textContent='Ajukan invoice';
+  document.getElementById('reviewEvidenceTitle').textContent='Bukti pendukung invoice';
+  document.getElementById('portalPricePreview').hidden=false;
+  if (!portalDraftLoaded) {portalDraftLoaded=true;const id=new URLSearchParams(location.search).get('invoice');if(id) loadPortalDraft(id).catch(error=>{document.getElementById('status').textContent=error.message;});}
+ }
  evidenceReady = !!(config && config.enabled);
  recordingEnabled = !!(config && config.recordingEnabled);
- evidenceInput.required = true;
+ evidenceInput.required = !portalExistingEvidence;
  document.getElementById('uploadSection').hidden = false;
  document.getElementById('reviewButton').disabled = !evidenceReady;
  document.getElementById('confirmationText').textContent = 'Saya sudah memeriksa data rekening dan menyetujui penyimpanan bukti pengajuan di Google Drive.';
  document.getElementById('reviewEvidenceTitle').textContent = 'Bukti sudah diunggah';
- document.getElementById('reviewEvidenceText').textContent = 'Tautan Google Drive akan disertakan dalam pesan. Tekan Kirim di WhatsApp untuk mengirim pengajuan.';
+ document.getElementById('reviewEvidenceText').textContent = portalMode ? 'Bukti akan diperiksa admin bersama data invoice. Invoice final baru dapat diunduh setelah disetujui.' : 'Tautan Google Drive akan disertakan dalam pesan. Tekan Kirim di WhatsApp untuk mengirim pengajuan.';
  const status = document.getElementById('evidenceConnectionStatus');
  status.hidden = evidenceReady;
  status.textContent = evidenceReady ? '' : (reason || 'Penyimpanan bukti belum diaktifkan. Admin perlu menjalankan authorizeEvidenceStorage di Apps Script.');
  document.getElementById('retryEvidenceButton').hidden = evidenceReady;
  updateProgress();
+}
+async function loadPortalDraft(id) {
+ const invoice=await callBackend('portalAction',{action:'get',id});
+ if (!['DRAFT','REVISION'].includes(invoice.status)) throw new Error('Invoice tidak tersedia untuk diedit.');
+ portalDraftId=invoice.id;const data=invoice.data;
+ for(const name of ['projectType','requestCategory']){const input=form.querySelector('[name="'+name+'"][value="'+data[name]+'"]');if(input)input.checked=true;}
+ syncRequestCategory(true);
+ if(data.requestCategory==='Projek')form.elements.projectRequestType.value=data.requestType;
+ else {const input=Array.from(form.querySelectorAll('[name="requestType"]')).find(input=>input.value===data.requestType);if(input)input.checked=true;}
+ syncRequestDetails();
+ for(const [key,value]of Object.entries(data)){const input=form.elements[key];if(input&&typeof value==='string'&&input.tagName&&!input.readOnly&&input.type!=='radio'&&input.type!=='file')input.value=value;}
+ if(isReimbursement()){
+  reimbursementRows().forEach(row=>row.remove());
+  (data.reimbursementItems||[]).forEach(item=>{addReimbursementRow(false);const row=reimbursementRows().slice(-1)[0];row.querySelector('[data-reimbursement-object]').value=item.object;row.querySelector('[data-reimbursement-amount]').value=item.amount;});
+ }
+ syncRequestDetails();uploadedEvidence=invoice.evidence;uploadedFiles=[];portalExistingEvidence=true;evidenceInput.required=false;
+ uploadedFolderMetadata=JSON.stringify({applicant:form.elements.applicant.value,requestType:selectedRequestType(),requestDate:form.elements.requestDate.value});
+ const list=document.getElementById('evidenceList');list.replaceChildren();invoice.evidence.forEach(file=>{const li=document.createElement('li');li.textContent=file.name+' · Bukti sebelumnya dipakai kembali';list.append(li);});updateProgress();
 }
 async function checkEvidenceConnection() {
  const retry = document.getElementById('retryEvidenceButton');

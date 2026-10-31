@@ -88,3 +88,7 @@ Untuk unggahan baru dari formulir terbaru, subfolder memakai format **Nama Pemoh
 Koreksi metadata sebelum WhatsApp dibuka memperbarui nama subfolder unggahan yang sama, dengan pemeriksaan sesi unggah dan folder induk; tautan tidak berubah. Koreksi identitas setelah WhatsApp dibuka membuat folder unggahan baru agar folder pengajuan sebelumnya tidak diganti namanya. Sesi pembaruan nama berlaku selama cache kepemilikan tersedia, maksimal enam jam; pilih ulang lampiran bila sesi kedaluwarsa. Folder lama di arsip tidak diubah secara massal.
 
 Nomor file mengikuti urutan lampiran yang dipilih: `Lampiran 01` sampai `Lampiran 10`. Koreksi metadata dalam sesi unggah yang sama memperbarui nama folder dan file bersama-sama tanpa mengubah isi, ekstensi, tautan, atau hak akses. File arsip lama tidak diubah secara massal oleh deployment ini.
+
+## Portal akun dan persetujuan invoice
+
+[Petunjuk portal login manual](CONNECT_PORTAL.md) menjelaskan aktivasi akun email/password, profil rekening tersimpan, tarif admin, review/revisi/persetujuan, dan unduh PDF final. Mode baru masih dinonaktifkan sampai `AUTH_SECRET`, password awal admin, dan `PORTAL_ENABLED` dikonfigurasi. Tidak diperlukan Google OAuth untuk login manual ini. Data formulir anonim yang sudah ada tetap dipertahankan dan tidak otomatis dihubungkan ke akun pemohon baru.

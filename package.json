@@ -3,11 +3,18 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "engines": {"node": ">=22"},
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "build": "node cloudflare/build.mjs",
     "deploy": "npm run build && wrangler deploy",
-    "test:bridge": "node --test tests/cloudflare.test.mjs tests/submission-record.test.cjs tests/evidence-upload.test.cjs"
+    "test:bridge": "node --test tests/cloudflare.test.mjs tests/submission-record.test.cjs tests/evidence-upload.test.cjs tests/auth.test.mjs tests/portal.test.cjs"
   },
-  "devDependencies": {"wrangler": "4.156.0"}
+  "devDependencies": {
+    "wrangler": "4.156.0"
+  },
+  "dependencies": {
+    "jose": "6.2.14"
+  }
 }

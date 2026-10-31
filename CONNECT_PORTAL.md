@@ -1,0 +1,67 @@
+# Portal invoice: login manual, profil, tarif, review dan PDF
+
+Implementasi ini memakai **email dan password**, sesuai perubahan keputusan pengguna. Google OAuth Client ID/Client Secret tidak diperlukan. Alamat tetap https://payment.blueconnect.id. Portal dinonaktifkan secara default agar formulir yang sedang dipakai tidak langsung berubah sebelum konfigurasi selesai.
+
+## Aktivasi
+
+1. Pastikan workflow Deploy application berhasil memasang `Portal.gs` bersama backend Google dan kode Cloudflare terbaru. Akses Sheets serta Drive yang telah diotorisasi tetap digunakan. Tab portal dibuat di spreadsheet catatan yang sudah dikonfigurasi; tab Pengajuan lama tidak dihapus, dipindahkan, atau diubah skemanya.
+2. Di GitHub **Settings → Secrets and variables → Actions → Secrets**, tambahkan:
+   - **AUTH_SECRET**: kunci acak minimal 32 karakter. Bisa dibuat sekali di PowerShell dengan `Set-Clipboard -Value (([guid]::NewGuid().ToString('N')) + ([guid]::NewGuid().ToString('N')))`, lalu tempel ke GitHub Secret.
+   - **ADMIN_INITIAL_PASSWORD**: password awal pilihan pemilik akun admin, minimal 12 dan maksimal 128 karakter. Jangan gunakan password akun Google dan jangan kirim nilainya ke chat.
+3. Jangan mengubah/menghapus secret Cloudflare/Google yang sudah berhasil: `BRIDGE_SECRET`, `CLASP_AUTH_JSON`, `CLOUDFLARE_API_TOKEN`, dan `CLOUDFLARE_ACCOUNT_ID`.
+4. Di GitHub **Variables**, tambahkan **PORTAL_ENABLED=true**. Jalankan workflow **Deploy application** pada main dengan publish dicentang. Workflow menerapkan flag dan kedua secret runtime ke Worker yang sudah ada. DNS dan Custom Domain tidak perlu diubah.
+5. Buka payment.blueconnect.id. Masuk dengan **blueconecin@gmail.com** dan ADMIN_INITIAL_PASSWORD yang Anda pilih. Akun admin dibuat pada login pertama yang berhasil. Email tersebut tidak boleh didaftarkan dari formulir pemohon.
+6. Masuk **Profil Saya → Ganti password** untuk mengganti password admin. Setelah berhasil, password bootstrap tidak digunakan lagi selama akun admin tetap ada. Anda dapat menghapus ADMIN_INITIAL_PASSWORD dari GitHub dan Cloudflare setelah bootstrap; AUTH_SECRET tetap wajib disimpan.
+7. Buat akun pemohon uji dari tab Daftar pemohon, lalu lengkapi profil. Uji proses lengkap sebelum mengundang semua pemohon.
+
+**AUTH_SECRET harus stabil.** Kunci ini dipakai sebagai akar kunci sesi dan pepper password; menggantinya sembarangan membuat sesi dan verifikasi password yang tersimpan tidak berlaku. Rotasi memerlukan prosedur migrasi/reset password. Simpan salinan aman melalui password manager, bukan dalam repositori atau spreadsheet.
+
+## Akun dan akses
+
+- Pendaftaran mandiri hanya menghasilkan Pemohon. Email login belum diverifikasi melalui email; pendaftaran tidak membuktikan kepemilikan alamat email. Tidak ada login Google atau pengiriman email otomatis.
+- Password disimpan sebagai verifier PBKDF2-SHA256 (100.000 iterasi) dengan salt acak dan HMAC pepper server. Hash disimpan pada tab Portal_Akun; pepper berada di Worker Secret, bukan di spreadsheet atau browser. Parameter mengikuti batas PBKDF2 native runtime Worker. Perlindungan tambahan berupa pembatasan percobaan login di cache backend.
+- Sesi delapan jam memakai cookie Secure, HttpOnly, SameSite=Lax. Tidak ada token autentikasi di localStorage. Perubahan password menaikkan versi sesi sehingga sesi lama ditolak server.
+- Role selalu ditetapkan server. Data role, total, profil penerbit, atau harga yang dikirim browser tidak menentukan kewenangan/nilai akhir invoice.
+- Admin pertama ditentukan sebagai blueconecin@gmail.com. Tidak ada pemilihan role saat pendaftaran. Admin tidak membuat invoice melalui akun admin; gunakan akun pemohon terpisah bila admin juga perlu mengajukan.
+- Profil pemohon menyimpan nama penerbit, WhatsApp, alamat, bank, rekening, dan nama pemilik rekening. Data rekening diisi otomatis serta readonly pada formulir. Setiap draft menyimpan snapshot profil; perubahan profil berikutnya tidak mengubah invoice yang sudah diajukan/disetujui.
+- Tab Portal_Akun berisi hash dan data profil. Batasi spreadsheet hanya bagi admin yang dipercaya. Jangan mempublikasikan atau membagikannya kepada seluruh pemohon. Portal tidak menyediakan endpoint pembacaan akun lain kepada pemohon.
+- Pemulihan lupa password melalui email, verifikasi email, dan MFA belum tersedia. Pengguna diminta menghubungi admin untuk penanganan akses; jangan mengubah hash spreadsheet tanpa prosedur pemulihan yang benar.
+
+Setelah akun portal pertama dibuat, backend menutup endpoint mutasi Google Apps Script lama yang tidak membawa identitas sesi. Pembukaan langsung URL Apps Script diarahkan untuk memakai domain portal. Menonaktifkan flag Cloudflare sesudah aktivasi **tidak membuka kembali akses anonim** pada backend. Untuk rollback, rencanakan pemulihan versi dan akses; jangan mematikan pemeriksaan autentikasi agar formulir lama bisa menulis lagi.
+
+## Alur invoice
+
+1. Pemohon melengkapi profil, membuka Buat invoice, lalu mengisi formulir kategori/jenis pekerjaan yang sudah ada. Bukti tetap diunggah ke subfolder Drive.
+2. Periksa Pengajuan menyimpan **DRAFT** pada Portal_Invoice dan menampilkan nilai dari tarif server. Pemohon boleh mengedit draft miliknya sendiri; role/identitas profil diperiksa lagi di backend.
+3. Tombol **Ajukan invoice** mengubahnya menjadi **SUBMITTED** dan mengunci pengeditan. Portal mode ini tidak mengirim WhatsApp; alur chat lama hanya berlaku pada formulir sebelum portal diaktifkan.
+4. Admin membuka Review pengajuan, memeriksa data/bukti, lalu Setujui, Minta revisi, atau Tolak. Revisi/penolakan wajib mempunyai catatan.
+5. Revisi menggunakan formulir yang sama, dengan data dan bukti sebelumnya dipakai kembali. Koreksi diajukan ulang dengan riwayat tetap tersimpan.
+6. Jika nilai belum tersedia atau jumlah Sales perlu direkonsiliasi, admin mengatur tarif lalu menggunakan Perbarui tarif/hasil rekon dengan catatan. Status menjadi CONFIRMATION; pemohon harus mengonfirmasi nilai baru sebelum admin dapat menyetujui.
+7. Persetujuan menghasilkan nomor invoice unik `INV/BCI/YYYYMM/NNNNNN`, snapshot final dan file PDF private di folder Invoice Disetujui. Invoice disetujui tidak dapat diedit atau dihitung ulang. Bila penerbitan gagal sebelum catatan final tersimpan, nomor dapat berlubang; nomor yang sudah diterbitkan tidak dipakai ulang.
+8. Pemohon yang memiliki invoice tersebut dan admin dapat mengunduh PDF melalui API yang memeriksa sesi dan status persetujuan. Pengguna lain tidak dapat mengunduhnya. File tidak dibagikan publik oleh aplikasi.
+
+Data Portal_Invoice adalah sumber proses baru; catatan anonim lama di tab Pengajuan tidak otomatis diklaim sebagai milik akun tertentu. Riwayat keputusan disimpan bersama data invoice. Tab tarif, profil, dan invoice memakai JSON per baris dengan batas ukuran sel; jangan mengedit struktur kolom secara manual.
+
+## Tarif
+
+Admin mengisi daftar tarif berdasarkan FTTH/FWA, jenis pekerjaan, dan satuan:
+
+- Sales: QTY yang diajukan, satuan Sales.
+- Manage Service: satu periode, satuan Periode.
+- Operasional: satu pengajuan, satuan Pengajuan.
+- Projek: QTY pekerjaan, satuan Pcs, Meter, atau Buah sesuai pilihan pemohon.
+- Reimburst: nominal setiap objek pengeluaran dari pemohon, bukan daftar tarif.
+
+Harga dalam Rupiah bulat positif, total setiap baris dibulatkan ke Rupiah terdekat. Draft tanpa tarif dapat diajukan untuk dilengkapi admin; persetujuan ditolak sampai tarif lengkap dan nilainya dikonfirmasi pemohon. Perubahan tarif tidak memperbarui invoice disetujui. PPN/pajak, potongan, jatuh tempo, pembatalan invoice disetujui, pencatatan lunas, dan integrasi pembayaran belum diimplementasikan. PDF ini bukan implementasi faktur pajak.
+
+## Pengujian sebelum digunakan
+
+```sh
+npm ci
+npm run test:bridge
+npm run build
+node tests/portal.browser.cjs
+npx wrangler deploy --dry-run
+```
+
+Tes lokal memakai layanan Google/Drive tiruan dan memeriksa autentikasi, cookie, akses lintas akun, penetapan tarif, rekonsiliasi, revisi, penguncian persetujuan, dan pembatasan PDF. Uji nyata setelah aktivasi dengan akun admin dan dua akun pemohon: pastikan profil/rekening otomatis, pemohon tidak melihat invoice pengguna lain, admin memberi revisi/persetujuan, perubahan tarif meminta konfirmasi, dan PDF final benar-benar dapat diunduh. Jangan memakai invoice uji sebagai tagihan nyata.

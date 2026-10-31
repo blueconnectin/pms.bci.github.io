@@ -24,6 +24,7 @@ export async function prepareStage(stage, source) {
   }
   await inspect(stage);
   await fs.copyFile(path.join(source,'Code.gs'),path.join(stage,'Code.js'));
+  await fs.copyFile(path.join(source,'Portal.gs'),path.join(stage,'Portal.js'));
   await fs.copyFile(path.join(source,'Index.html'),path.join(stage,'Index.html'));
 }
 
@@ -62,7 +63,7 @@ async function main() {
     // Read back the target to verify the intended application really was saved.
     const verify=path.join(work,'verify');await fs.mkdir(verify);
     clasp(['clone',APPS_SCRIPT_ID],verify);
-    for(const [local,remote] of [['Code.gs','Code.js'],['Index.html','Index.html']]) {
+    for(const [local,remote] of [['Code.gs','Code.js'],['Portal.gs','Portal.js'],['Index.html','Index.html']]) {
       if((await fs.readFile(path.join(source,local),'utf8')) !== (await fs.readFile(path.join(verify,remote),'utf8'))) throw new Error('Remote source verification failed; Web App deployment was not updated.');
     }
     console.log('Apps Script source synced and verified.');

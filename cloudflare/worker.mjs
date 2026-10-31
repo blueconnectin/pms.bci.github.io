@@ -1,3 +1,5 @@
+import {portalRoute,authenticatedActor} from './portal.mjs';
+import {authEnabled} from './auth.mjs';
 const MAX_BODY = 14 * 1024 * 1024;
 function json(body,status=200) {
   return Response.json(body,{status,headers:{'Cache-Control':'no-store','X-Content-Type-Options':'nosniff','Referrer-Policy':'no-referrer','X-Blueconnect-Api':'2'}});
@@ -22,9 +24,32 @@ export async function signedEnvelope(payload,secret) {
 export async function handle(request,env,fetchUpstream=fetch) {
   const url=new URL(request.url);
   const route=url.pathname.replace(/\/{2,}/g,'/').replace(/\/+$/,'');
+  async function bridge(action,input,actor) {
+    if (!env.BRIDGE_SECRET || env.BRIDGE_SECRET.length < 32) throw Error('Koneksi server belum dikonfigurasi.');
+    const target=new URL(env.APPS_SCRIPT_URL);
+    if(target.origin!=='https://script.google.com'||!/^\/macros\/s\/[A-Za-z0-9_-]+\/exec$/.test(target.pathname))throw Error('Tujuan server tidak valid.');
+    const envelope=await signedEnvelope(JSON.stringify({action,input,actor}),env.BRIDGE_SECRET);
+    const response=await fetchUpstream(target.href,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(envelope),redirect:'follow',signal:AbortSignal.timeout(90000)});
+    if(!response.ok)throw Error('Server pengajuan belum tersedia.');
+    const result=await response.json();if(!result.ok)throw Error(result.error||'Permintaan belum berhasil.');return result.data;
+  }
+  const portal=await portalRoute(request,env,bridge);if(portal)return portal;
+  if(authEnabled(env)&&(route===''||route==='/index.html')) {
+    const response=await env.ASSETS.fetch(new Request(new URL('/portal.html',url),request));
+    const headers=new Headers(response.headers);headers.set('Cache-Control','no-store');return new Response(response.body,{status:response.status,headers});
+  }
+  if(authEnabled(env)&&route==='/request-form') {
+    const actor=await authenticatedActor(request,env);if(!actor)return json({error:'Silakan masuk.'},401);
+    try{const me=await bridge('portal',{action:'me'},actor);if(!me.profile)return json({error:'Lengkapi profil terlebih dahulu.'},403);}catch{return json({error:'Sesi tidak berlaku.'},401);}
+    const response=await env.ASSETS.fetch(new Request(new URL('/index.html',url),request));const headers=new Headers(response.headers);
+    headers.set('X-Frame-Options','SAMEORIGIN');headers.set('Content-Security-Policy',"default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self'; frame-ancestors 'self'; form-action 'none'; object-src 'none'; base-uri 'none'");headers.set('Cache-Control','no-store');return new Response(response.body,{status:response.status,headers});
+  }
   if(!route.startsWith('/api/'))return env.ASSETS.fetch(request);
   if(!['/api/config','/api/evidence','/api/submissions','/api/evidence-folder'].includes(route))return json({error:'Endpoint tidak ditemukan.',code:'API_ROUTE_NOT_FOUND',path:route},404);
   const isConfig=route==='/api/config';
+  const actor=await authenticatedActor(request,env);
+  if(authEnabled(env)&&!isConfig&&!actor)return json({error:'Silakan masuk terlebih dahulu.'},401);
+  if(authEnabled(env)&&!isConfig&&request.headers.get('origin')!==url.origin)return json({error:'Asal permintaan ditolak.'},403);
   if(request.method!==(isConfig?'GET':'POST'))return json({error:'Metode tidak didukung.'},405);
   // Same-origin browser requests only; this is an upload endpoint, not a proxy.
   const origin=request.headers.get('origin');
@@ -34,7 +59,7 @@ export async function handle(request,env,fetchUpstream=fetch) {
   try{target=new URL(env.APPS_SCRIPT_URL);}catch{return json({error:'Tujuan Apps Script belum dikonfigurasi.'},503);}
   if(target.origin!=='https://script.google.com' || !/^\/macros\/s\/[A-Za-z0-9_-]+\/exec$/.test(target.pathname))return json({error:'Tujuan Apps Script tidak valid.'},503);
   let payload;
-  if(isConfig)payload=JSON.stringify({action:'config'});
+  if(isConfig)payload=JSON.stringify({action:'config',actor});
   else {
     if(!(request.headers.get('content-type')||'').toLowerCase().startsWith('application/json'))return json({error:'Format permintaan harus JSON.'},415);
     try {
@@ -42,7 +67,7 @@ export async function handle(request,env,fetchUpstream=fetch) {
       // Keep the upload body opaque: Apps Script validates files and sizes.
       JSON.parse(raw);
       if (route === '/api/submissions' && raw.length > 40000) return json({error:'Data catatan terlalu besar.'},413);
-      payload=JSON.stringify({action:route === '/api/submissions' ? 'record' : (route === '/api/evidence-folder' ? 'renameEvidence' : 'upload'),input:JSON.parse(raw)});
+      payload=JSON.stringify({action:route === '/api/submissions' ? 'record' : (route === '/api/evidence-folder' ? 'renameEvidence' : 'upload'),input:JSON.parse(raw),actor});
     }catch(error){return json({error:error.message==='SIZE'?'Total lampiran terlalu besar.':'Data unggahan tidak valid.'},error.message==='SIZE'?413:400);}
   }
   try {
