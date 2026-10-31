@@ -1,0 +1,46 @@
+name: Sync Google Apps Script
+
+on:
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: Update the existing Web App deployment after syncing
+        type: boolean
+        default: false
+  push:
+    branches: [main]
+    paths:
+      - Index.html
+      - Code.gs
+      - .github/scripts/apps-script-sync.mjs
+      - .github/workflows/apps-script.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: blueconnect-apps-script
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    if: github.event_name == 'workflow_dispatch' || vars.APPS_SCRIPT_SYNC_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '24'
+      - name: Install pinned clasp CLI
+        run: npm install --prefix "$RUNNER_TEMP/clasp-cli" --no-audit --no-fund @google/clasp@3.4.1
+      - name: Sync source and optionally update Web App
+        env:
+          CLASP_AUTH_JSON: ${{ secrets.CLASP_AUTH_JSON }}
+          CLASP_BIN: ${{ runner.temp }}/clasp-cli/node_modules/.bin/clasp
+          APPS_SCRIPT_ID: 1KnwZq7MWdh-HDyJYSixXWBJY7zScSbQU1Y33zg7I35aqaShYaK0W2tHq
+          APPS_SCRIPT_DEPLOYMENT_ID: ${{ vars.APPS_SCRIPT_DEPLOYMENT_ID }}
+          PUBLISH_WEB_APP: ${{ (github.event_name == 'workflow_dispatch' && inputs.publish) || (github.event_name == 'push' && vars.APPS_SCRIPT_AUTO_PUBLISH == 'true') }}
+        run: node .github/scripts/apps-script-sync.mjs

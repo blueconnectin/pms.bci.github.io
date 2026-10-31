@@ -3,3 +3,4 @@
 .clasprc.json
 .clasp-credentials.json
 node_modules/
+blueconnect-oauth*.json

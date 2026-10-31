@@ -35,3 +35,7 @@ Untuk proyek baru: buat proyek pada Apps Script, tambahkan `Code.gs`, dan tambah
 Untuk sinkronisasi melalui `clasp`, diperlukan Script ID proyek tujuan, autentikasi Google yang berhak mengedit proyek, dan Apps Script API aktif pada akun. Gunakan OAuth interaktif yang aman; jangan kirim token atau berkas kredensial melalui chat atau commit ke Git. `.claspignore` membatasi unggahan pada tiga file aplikasi. Sebelum `clasp push` ke proyek lama, baca dan cadangkan sumber proyek serta deployment yang ada: sinkronisasi dapat menimpa file. Jangan gunakan `--force` atau mengganti manifest proyek lama tanpa memeriksa konfigurasi dan fungsinya.
 
 Push source dan deployment adalah dua langkah berbeda. Setelah source diperbarui, deployment yang sudah ada perlu diarahkan ke versi baru agar URL `/exec` menampilkan perubahan. Periksa formulir dan navigasi WhatsApp di deployment sebelum menyatakan aplikasi aktif.
+
+## Sinkronisasi GitHub Actions
+
+Ikuti [panduan koneksi Google dan GitHub Secrets](CONNECT_APPS_SCRIPT.md) untuk mengaktifkan workflow. Sinkronisasi otomatis dan publikasi otomatis dinonaktifkan sampai variabel repositori terkait diaktifkan. Workflow mempertahankan manifest serta file remote lain, membuat versi cadangan sebelum push, dan memverifikasi source setelah unggah. Kredensial wajib disimpan di GitHub Secrets, bukan dalam repositori.
