@@ -72,9 +72,9 @@ main{margin-top:24px}
 </section><section id="uploadSection" class="form-block"><h2 class="section-title"><span class="section-number">03</span>Lampiran bukti pengajuan</h2><p class="hint" id="attachmentNotice">Pilih 1–10 file. Maksimal 5 MB per file, total 10 MB. JPG, PNG, WEBP, PDF, DOCX, atau XLSX.</p><label class="upload-zone" id="uploadZone" for="evidenceFiles"><span class="upload-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 18H5a4 4 0 0 1-.5-8A7 7 0 0 1 18 8a5 5 0 0 1 1 10h-2M12 21V11m-4 4 4-4 4 4"/></svg></span><span><strong>Pilih foto atau dokumen</strong><span class="drop-help"> atau seret file ke sini</span></span><small>JPG, PNG, WEBP, PDF, DOCX, XLSX · maksimal 10 file. Pilih lagi untuk menambah lampiran.</small><input type="file" id="evidenceFiles" multiple required accept=".jpg,.jpeg,.png,.webp,.pdf,.docx,.xlsx" aria-label="Foto atau dokumen bukti" aria-describedby="attachmentNotice"></label><ul id="evidenceList" class="file-list" aria-live="polite"></ul><div class="notice">Lampiran diunggah ke Google Drive saat Anda memeriksa pengajuan. Tautannya dimasukkan ke pesan WhatsApp. Admin memerlukan akses ke folder bukti.</div><div id="evidenceConnectionStatus" class="connection-status" role="status" aria-live="polite">Memeriksa koneksi penyimpanan bukti…</div><button id="retryEvidenceButton" class="secondary retry-evidence" type="button" hidden>Coba hubungkan kembali</button></section>
 <div class="submit-area"><label class="check"><input type="checkbox" id="confirmation" required aria-describedby="attachmentNotice"><span id="confirmationText">Saya sudah memeriksa data rekening dan menyetujui penyimpanan bukti pengajuan di Google Drive.</span></label>
 <button id="reviewButton" class="primary" type="button" disabled><span id="reviewButtonLabel">Periksa Pengajuan</span> <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-5-5 5 5-5 5"/></svg></button>
-<p class="privacy"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 4 6v6c0 5 8 9 8 9s8-4 8-9V6z"/><path d="m9 12 2 2 4-4"/></svg><span>Bukti disimpan di Google Drive. Data rekening diteruskan ke WhatsApp saat Anda memilih tombol kirim.</span></p><p id="status" class="status" role="status" aria-live="polite">Memuat formulir…</p>
+<p class="privacy"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 4 6v6c0 5 8 9 8 9s8-4 8-9V6z"/><path d="m9 12 2 2 4-4"/></svg><span>Bukti disimpan di Google Drive. Jika pencatatan otomatis aktif, data pengajuan dan rekening juga dicatat sebelum WhatsApp dibuka.</span></p><p id="status" class="status" role="status" aria-live="polite">Memuat formulir…</p>
 </div></form>
-<section id="reviewDialog" class="review-panel" aria-labelledby="reviewTitle" hidden><div class="review-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 12 4 4 8-8"/></svg></div><h2 id="reviewTitle" tabindex="-1">Periksa pengajuan Anda</h2><p>Pastikan data berikut sudah benar sebelum membuka WhatsApp admin.</p><dl class="summary" id="summary"></dl><div class="notice"><div><strong id="reviewEvidenceTitle">Bukti pengajuan</strong><span id="reviewEvidenceText">Lampirkan bukti langsung di WhatsApp, lalu tekan Kirim.</span></div></div><div class="actions"><button id="editButton" class="secondary" type="button">Ubah data</button><button id="whatsappButton" class="primary" type="button">Kirim ke WhatsApp Admin ↗</button></div></section>
+<section id="reviewDialog" class="review-panel" aria-labelledby="reviewTitle" hidden><div class="review-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 12 4 4 8-8"/></svg></div><h2 id="reviewTitle" tabindex="-1">Periksa pengajuan Anda</h2><p>Pastikan data berikut sudah benar sebelum membuka WhatsApp admin.</p><dl class="summary" id="summary"></dl><div class="notice"><div><strong id="reviewEvidenceTitle">Bukti pengajuan</strong><span id="reviewEvidenceText">Lampirkan bukti langsung di WhatsApp, lalu tekan Kirim.</span></div></div><p id="recordStatus" class="status" role="status" aria-live="polite"></p><div class="actions"><button id="editButton" class="secondary" type="button">Ubah data</button><button id="whatsappButton" class="primary" type="button">Kirim ke WhatsApp Admin ↗</button></div></section>
 <noscript><p class="notice">Aktifkan JavaScript pada browser untuk memeriksa pengajuan dan membuka WhatsApp.</p></noscript></section>
 </main><footer><span>© <span id="year"></span> PT Blue Connect Indonesia. All rights reserved.</span><span>Portal Pengajuan</span></footer>
 
@@ -85,7 +85,8 @@ const ADMIN_WHATSAPP = '6288223062197';
 const form = document.getElementById('requestForm');
 const review = document.getElementById('reviewDialog');
 const evidenceInput = document.getElementById('evidenceFiles');
-let driveUploadsEnabled = true, evidenceReady = false;
+let driveUploadsEnabled = true, evidenceReady = false, recordingEnabled = false;
+let submissionRecordId = '', lastSavedSnapshot = '', recordFinalized = false;
 let uploadedEvidence = [], uploadedFiles = [], selectedEvidenceFiles = [], uploadRequestId = '', uploading = false;
 const labels = {applicant:'Nama Pemohon',requestDate:'Tanggal Pengajuan',projectType:'Jenis proyek',requestCategory:'Kategori pengajuan',requestType:'Jenis Pengajuan',bank:'Nama Bank',accountNumber:'Nomor Rekening',accountOwner:'Nama Pemilik Rekening'};
 function localDate(date) { return [date.getFullYear(),String(date.getMonth()+1).padStart(2,'0'),String(date.getDate()).padStart(2,'0')].join('-'); }
@@ -316,6 +317,7 @@ const uploadZone = document.getElementById('uploadZone');
 ['dragenter','dragover'].forEach(name => uploadZone.addEventListener(name,event => {event.preventDefault();if (!uploading) uploadZone.classList.add('dragging');}));
 ['dragleave','drop'].forEach(name => uploadZone.addEventListener(name,event => {event.preventDefault();uploadZone.classList.remove('dragging');}));
 uploadZone.addEventListener('drop',event => {if (uploading || !event.dataTransfer.files.length) return;evidenceInput.files = event.dataTransfer.files;evidenceInput.dispatchEvent(new Event('change',{bubbles:true}));});
+function newRecordId() {return typeof crypto.randomUUID === 'function' ? crypto.randomUUID() : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,c => {const n = crypto.getRandomValues(new Uint8Array(1))[0] % 16;return (c === 'x' ? n : (n & 3) | 8).toString(16);});}
 function readFile(file) {
  return new Promise((resolve,reject) => {const reader = new FileReader();reader.onload = () => resolve({name:file.name,type:file.type,data:String(reader.result).split(',')[1]});reader.onerror = () => reject(new Error('File tidak dapat dibaca. Pilih ulang lampiran.'));reader.readAsDataURL(file);});
 }
@@ -324,11 +326,12 @@ function callBackend(method,payload) {
   return new Promise((resolve,reject) => {
    const rpc = google.script.run.withSuccessHandler(resolve).withFailureHandler(reject);
    if (method === 'uploadEvidence') rpc.uploadEvidence(payload);
+   else if (method === 'saveSubmissionRecord') rpc.saveSubmissionRecord(payload);
    else rpc.getEvidenceConfiguration();
   });
  }
  const isConfig = method === 'getEvidenceConfiguration';
- return fetch(isConfig ? '/api/config' : '/api/evidence',{
+ return fetch(isConfig ? '/api/config' : (method === 'saveSubmissionRecord' ? '/api/submissions' : '/api/evidence'),{
   method:isConfig ? 'GET' : 'POST',
   headers:isConfig ? {} : {'Content-Type':'application/json'},
   body:isConfig ? undefined : JSON.stringify(payload),
@@ -369,7 +372,26 @@ async function showReview() {
    return;
   } finally {uploading = false;form.setAttribute('aria-busy','false');document.getElementById('reviewButtonLabel').textContent = 'Periksa Pengajuan';controls.forEach(control => control.disabled = false);syncRequestCategory(false);}
  }
- const data=requestData();const summary=document.getElementById('summary');summary.replaceChildren();
+ const data = requestData();
+ const recordStatus = document.getElementById('recordStatus');
+ if (recordingEnabled) {
+  const snapshot = JSON.stringify({data,folderUrl:uploadedEvidence[0].folderUrl,fileCount:uploadedEvidence.length});
+  if (snapshot !== lastSavedSnapshot) {
+   if (!submissionRecordId || recordFinalized) {submissionRecordId = newRecordId();recordFinalized = false;}
+   const controls = Array.from(form.querySelectorAll('input,select,textarea,button'));
+   uploading = true;controls.forEach(control => control.disabled = true);
+   document.getElementById('status').textContent = 'Menyimpan catatan pengajuan…';
+   document.getElementById('reviewButtonLabel').textContent = 'Menyimpan catatan…';
+   try {
+    const receipt = await callBackend('saveSubmissionRecord',{id:submissionRecordId,data,folderUrl:uploadedEvidence[0].folderUrl,fileCount:uploadedEvidence.length});
+    if (!receipt || receipt.id !== submissionRecordId) throw new Error('Penyimpanan catatan belum terkonfirmasi. Silakan coba lagi.');
+    lastSavedSnapshot = snapshot;document.getElementById('status').textContent = '';
+   } catch (error) {document.getElementById('status').textContent = 'Catatan belum tersimpan. ' + (error.message || 'Silakan coba kembali.');return;}
+   finally {uploading = false;controls.forEach(control => control.disabled = false);syncRequestCategory(false);document.getElementById('reviewButtonLabel').textContent = 'Periksa Pengajuan';}
+  }
+  recordStatus.textContent = 'Catatan pengajuan sudah tersimpan. Pengiriman pesan tetap harus Anda lakukan di WhatsApp.';
+ } else recordStatus.textContent = 'Pencatatan otomatis belum diaktifkan oleh admin. Data tetap disertakan dalam pesan WhatsApp.';
+ const summary=document.getElementById('summary');summary.replaceChildren();
  for(const [label,value] of submissionEntries(data)) {
   const dt=document.createElement('dt');dt.textContent=label;
   const dd=document.createElement('dd');dd.textContent=value;summary.append(dt,dd);
@@ -394,6 +416,7 @@ function closeReview() {
 document.getElementById('editButton').addEventListener('click',closeReview);
 document.getElementById('whatsappButton').addEventListener('click',()=>{
  if(!form.reportValidity()) {closeReview();return;}
+ recordFinalized = true;
  const url = 'https://wa.me/' + ADMIN_WHATSAPP + '?text=' + encodeURIComponent(whatsappMessage(requestData()));
  // A real click opens WhatsApp; no API key, backend, or automatic send is involved.
  const link=document.createElement('a');link.href=url;link.target='_blank';link.rel='noopener noreferrer';link.click();
@@ -403,6 +426,7 @@ document.getElementById('status').textContent = '';
 document.getElementById('reviewButton').disabled = false;
 function configureEvidence(config,reason) {
  evidenceReady = !!(config && config.enabled);
+ recordingEnabled = !!(config && config.recordingEnabled);
  evidenceInput.required = true;
  document.getElementById('uploadSection').hidden = false;
  document.getElementById('reviewButton').disabled = !evidenceReady;

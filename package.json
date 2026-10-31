@@ -7,7 +7,7 @@
   "scripts": {
     "build": "node cloudflare/build.mjs",
     "deploy": "npm run build && wrangler deploy",
-    "test:bridge": "node --test tests/cloudflare.test.mjs"
+    "test:bridge": "node --test tests/cloudflare.test.mjs tests/submission-record.test.cjs tests/evidence-upload.test.cjs"
   },
   "devDependencies": {"wrangler": "4.156.0"}
 }

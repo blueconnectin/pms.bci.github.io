@@ -77,7 +77,8 @@ function authorizeEvidenceStorage() {
 
 /** Non-sensitive capability flag; Drive is not accessed before owner authorization. */
 function getEvidenceConfiguration() {
-  return {enabled:PropertiesService.getScriptProperties().getProperty('EVIDENCE_UPLOADS_READY') === 'true'};
+  var props = PropertiesService.getScriptProperties();
+  return {enabled:props.getProperty('EVIDENCE_UPLOADS_READY') === 'true',recordingEnabled:props.getProperty('SUBMISSION_LOG_READY') === 'true' && !!props.getProperty('SUBMISSION_SPREADSHEET_ID')};
 }
 
 /** Receives only requests signed by the Cloudflare server, not browser secrets. */
@@ -98,9 +99,107 @@ function doPost(event) {
     var payload = JSON.parse(envelope.payload);
     if (payload.action === 'config') response = {ok:true,data:getEvidenceConfiguration()};
     else if (payload.action === 'upload') response = {ok:true,data:uploadEvidence(payload.input)};
+    else if (payload.action === 'record') response = {ok:true,data:saveSubmissionRecord(payload.input)};
     else throw new Error('Aksi tidak didukung.');
   } catch (error) {
     response = {ok:false,error:String(error.message || 'Permintaan gagal.')};
   }
   return ContentService.createTextOutput(JSON.stringify(response)).setMimeType(ContentService.MimeType.JSON);
+}
+
+function submissionHeaders_() {
+  return ['ID Pengajuan','Waktu Catat UTC','Terakhir Diperbarui UTC','Status Catatan','Status WhatsApp','Nama Pemohon','Tanggal Pengajuan','Jenis Proyek','Kategori','Jenis Pengajuan','Detail Pengajuan','Nama Bank','Nomor Rekening','Pemilik Rekening','Folder Bukti','Jumlah Lampiran'];
+}
+function submissionSheet_(book) {
+  var headers = submissionHeaders_(), sheet = book.getSheetByName('Pengajuan');
+  if (!sheet) sheet = book.insertSheet('Pengajuan');
+  if (!sheet.getLastRow()) {sheet.getRange(1,1,1,headers.length).setValues([headers]);sheet.setFrozenRows(1);}
+  else {
+    var actual = sheet.getRange(1,1,1,headers.length).getValues()[0];
+    if (JSON.stringify(actual) !== JSON.stringify(headers)) throw new Error('Header tab Pengajuan berbeda. Gunakan spreadsheet kosong atau tab khusus.');
+  }
+  return sheet;
+}
+/** Run once as deployment owner; this requests Sheets consent without recording a submission. */
+function authorizeSubmissionLog() {
+  var props = PropertiesService.getScriptProperties(), id = props.getProperty('SUBMISSION_SPREADSHEET_ID');
+  id = id || '1A6hKNV7NCqQ8D5Vdiu5KTWi1FydTemvSJsF2YdcM2Lo';
+  var book = SpreadsheetApp.openById(id);
+  props.setProperty('SUBMISSION_SPREADSHEET_ID',book.getId());
+  submissionSheet_(book);
+  props.setProperty('SUBMISSION_LOG_READY','true');
+  console.log('Spreadsheet catatan pengajuan: ' + book.getUrl());
+}
+function recordText_(value,label,max) {
+  if (typeof value !== 'string' || !value.trim() || value.trim().length > max) throw new Error(label + ' wajib diisi dan tidak boleh terlalu panjang.');
+  return value.trim();
+}
+function recordDate_(value) {
+  if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value) || !isFinite(Date.parse(value)) || new Date(value).toISOString().slice(0,10) !== value) throw new Error('Tanggal pengajuan/pekerjaan tidak valid.');
+  return value;
+}
+function recordRange_(start,end) {
+  start = recordDate_(start);end = recordDate_(end);
+  if (end < start) throw new Error('Tanggal selesai tidak boleh sebelum tanggal mulai.');
+  return {mulai:start,selesai:end};
+}
+function normalizeRecord_(data) {
+  if (!data || typeof data !== 'object') throw new Error('Data pengajuan tidak valid.');
+  var result = {applicant:recordText_(data.applicant,'Nama pemohon',120),requestDate:recordDate_(data.requestDate),projectType:data.projectType,category:data.requestCategory,type:data.requestType,bank:recordText_(data.bank,'Nama bank',80),account:recordText_(data.accountNumber,'Nomor rekening',40),owner:recordText_(data.accountOwner,'Pemilik rekening',120),details:{}};
+  if (['FTTH','FWA'].indexOf(result.projectType) < 0 || !/^\d+$/.test(result.account)) throw new Error('Jenis proyek atau nomor rekening tidak valid.');
+  var projectTypes = ['Instalasi ODC','Instalasi ODP','Instalasi Closure','Join Core','Instalasi OTB','Penarikan Kabel Feeder','Penarikan Kabel Precon','Pemasangan Tiang','Pemasangan Aksesoris KU','Pemasangan X Frame 40 X 40','Pemasangan X Frame 80 X 80'];
+  if (result.category === 'Projek') {if (projectTypes.indexOf(result.type) < 0) throw new Error('Jenis pekerjaan projek tidak valid.');}
+  else if (result.category === 'Non Projek') {if (['Sales','Manage Service','Reimburst','Operasional'].indexOf(result.type) < 0) throw new Error('Jenis pengajuan Non Projek tidak valid.');}
+  else throw new Error('Kategori pengajuan tidak valid.');
+  if (result.type === 'Sales') {
+    result.details.periode = recordRange_(data.salesPeriodStart,data.salesPeriodEnd);
+    var count = Number(data.salesCount);if (!Number.isSafeInteger(count) || count < 1) throw new Error('Jumlah sales tidak valid.');
+    result.details.jumlahSales = count;result.details.catatan = 'Jumlah aktual dihitung berdasarkan rekonsiliasi dengan admin proyek.';
+  } else if (result.type === 'Manage Service') result.details.periodePenagihan = recordRange_(data.managePeriodStart,data.managePeriodEnd);
+  else if (result.type === 'Reimburst') {
+    if (!Array.isArray(data.reimbursementItems) || !data.reimbursementItems.length || data.reimbursementItems.length > 100) throw new Error('Rincian Reimburst tidak valid (maksimal 100 rincian per catatan).');
+    var total = 0;
+    result.details.rincian = data.reimbursementItems.map(function(item) {
+      var amount = Number(item.amount);if (!Number.isSafeInteger(amount) || amount < 1) throw new Error('Nominal Reimburst tidak valid.');
+      total += amount;return {objek:recordText_(item.object,'Objek Reimburst',200),nominal:amount};
+    });
+    if (!Number.isSafeInteger(total)) throw new Error('Total Reimburst terlalu besar.');result.details.total = total;
+  } else {
+    var prefix = result.category === 'Projek' ? 'projectWork' : 'operationalWork';
+    if (['single','range'].indexOf(data[prefix+'DateMode']) < 0) throw new Error('Pilihan tanggal pekerjaan tidak valid.');
+    result.details.tanggal = data[prefix+'DateMode'] === 'range' ? recordRange_(data[prefix+'DateStart'],data[prefix+'DateEnd']) : {tanggal:recordDate_(data[prefix+'DateStart'])};
+    result.details.keterangan = recordText_(data[prefix+'Note'],'Keterangan',1000);
+    if (result.category === 'Projek') {
+      var qty = Number(data.projectWorkQuantity), unit = data.projectWorkUnit;
+      if (!isFinite(qty) || qty <= 0 || qty > Number.MAX_SAFE_INTEGER || ['Pcs','Meter','Buah'].indexOf(unit) < 0 || (unit !== 'Meter' && !Number.isSafeInteger(qty))) throw new Error('QTY atau satuan tidak valid.');
+      result.details.jumlah = qty;result.details.satuan = unit;
+    }
+  }
+  return result;
+}
+/** Idempotent upsert of a reviewed draft. It does not claim a WhatsApp message was sent. */
+function saveSubmissionRecord(input) {
+  var props = PropertiesService.getScriptProperties(), id = props.getProperty('SUBMISSION_SPREADSHEET_ID');
+  if (!id || props.getProperty('SUBMISSION_LOG_READY') !== 'true') throw new Error('Catatan Sheets belum diaktifkan oleh admin.');
+  if (!input || !/^[a-f0-9-]{36}$/i.test(input.id || '') || JSON.stringify(input).length > 40000) throw new Error('Data catatan tidak valid atau terlalu besar.');
+  var record = normalizeRecord_(input.data);
+  var folderId = String(input.folderUrl || '').match(/^https:\/\/drive\.google\.com\/drive\/folders\/([A-Za-z0-9_-]+)(?:\?.*)?$/);
+  if (!folderId || !Number.isInteger(input.fileCount) || input.fileCount < 1 || input.fileCount > 10) throw new Error('Bukti pengajuan tidak valid.');
+  var folder = DriveApp.getFolderById(folderId[1]), parents = folder.getParents(), allowed = false;
+  var rootId = props.getProperty('UPLOAD_FOLDER_ID') || EVIDENCE_DEFAULT_FOLDER_ID_;
+  while (parents.hasNext()) if (parents.next().getId() === rootId) allowed = true;
+  if (!allowed) throw new Error('Folder bukti tidak berada di folder pengajuan.');
+  var lock = LockService.getScriptLock();lock.waitLock(30000);
+  try {
+    var sheet = submissionSheet_(SpreadsheetApp.openById(id)), last = sheet.getLastRow(), target = last+1, created = new Date().toISOString();
+    if (last > 1) {
+      var existing = sheet.getRange(2,1,last-1,2).getValues();
+      for (var i=0;i<existing.length;i++) if (existing[i][0] === input.id) {target=i+2;created=existing[i][1];break;}
+    }
+    var now = new Date().toISOString();
+    // Explicit text keeps leading zeroes and prevents user input becoming formulas.
+    var values = [input.id,created,now,'TERSIMPAN','PENGIRIMAN_BELUM_DIKONFIRMASI',record.applicant,record.requestDate,record.projectType,record.category,record.type,JSON.stringify(record.details),record.bank,record.account,record.owner,folder.getUrl(),String(input.fileCount)];
+    var row = sheet.getRange(target,1,1,values.length);row.setNumberFormat('@');row.setValues([values.map(function(value,index) {return index < 5 ? value : "'" + value;})]);
+    SpreadsheetApp.flush();return {id:input.id,savedAt:now};
+  } finally {lock.releaseLock();}
 }

@@ -28,7 +28,7 @@ Tidak perlu menaruh kredensial Google Drive di HTML, GitHub Variables, atau chat
 
 File disimpan di folder pilihan dan mewarisi akses folder. Jangan membuat folder publik jika buktinya mengandung informasi pribadi. Aplikasi tidak memanggil `setSharing` dan tidak mengirim undangan email. Nama file diberi UUID untuk menghindari benturan. File tetap berada di Drive walaupun pemohon membatalkan atau mengubah pilihan setelah unggah; admin mengelola retensi/penghapusan melalui Drive.
 
-Data rekening tidak disimpan ke database atau localStorage. Pesan dan tautan Drive diteruskan ke parameter URL WhatsApp, jadi jangan membagikan URL pesan yang berisi data pribadi. Unggah ulang permintaan yang sama memakai ID dan fingerprint file untuk deduplikasi selama cache server tersedia (maksimal enam jam); ini bukan jaminan deduplikasi permanen.
+Data rekening tidak disimpan di localStorage. Jika pencatatan otomatis diaktifkan, data pengajuan dan rekening disimpan di spreadsheet tujuan pada tab Pengajuan. Pesan dan tautan Drive diteruskan ke parameter URL WhatsApp, jadi jangan membagikan URL pesan yang berisi data pribadi. Unggah ulang permintaan yang sama memakai ID dan fingerprint file untuk deduplikasi selama cache server tersedia (maksimal enam jam); ini bukan jaminan deduplikasi permanen.
 
 Endpoint upload hanya menerima format/ukuran yang divalidasi, memeriksa header biner dasar, dan menyimpan ke folder yang ditetapkan server. Pemeriksaan ini bukan pemindaian antivirus atau validasi isi lengkap dokumen Office. Jika deployment dapat diakses siapa pun, unggah juga dapat diakses pengunjung publik: sesuaikan akses Web App dengan anggota tim serta pantau penggunaan/kuota Drive. Kegagalan sebagian batch dibersihkan ke Trash sejauh izin memungkinkan.
 
@@ -76,3 +76,7 @@ Semua 11 jenis kategori Projek menggunakan detail tanggal pekerjaan (satu tangga
 Judul pesan: **PENGAJUAN INVOICE BLUE CONNECT INDONESIA**. Pesan dibagi menjadi **1. Informasi pengajuan**, **2. Rekening penerima**, dan **3. Lampiran bukti pengajuan**. Semua detail kategori/pekerjaan masuk ke bagian informasi; rekening berada dalam bagian tersendiri.
 
 Untuk unggahan baru, aplikasi membuat satu subfolder per batch pengajuan di dalam folder bukti yang dikonfigurasi. Semua file pengajuan disimpan di subfolder itu. Ringkasan dan pesan WhatsApp cukup mencantumkan satu tautan subfolder, termasuk bila bukti hanya satu file. Folder tidak dibuat publik oleh aplikasi; admin tetap memerlukan akses yang diwarisi dari folder induk. Pengajuan lain memakai subfolder berbeda sehingga tautan tidak membuka seluruh arsip bukti. File pengajuan lama tidak dipindahkan atau dihapus. Percobaan ulang dengan cache aktif menggunakan kembali subfolder batch yang sama.
+
+## Catatan otomatis Google Sheets
+
+[Panduan aktivasi catatan](CONNECT_SUBMISSION_LOG.md) menjelaskan otorisasi satu kali melalui fungsi `authorizeSubmissionLog`. Tujuannya adalah spreadsheet yang diberikan pengguna, pada tab **Pengajuan**. Setelah aktif, data dan rekening dicatat sebelum ringkasan ditampilkan; status WhatsApp belum dikonfirmasi. Retry dan revisi draft menggunakan ID yang sama. Tidak ada perubahan pada kebijakan akses spreadsheet atau folder Drive.

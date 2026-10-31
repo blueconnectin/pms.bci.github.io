@@ -23,7 +23,7 @@ export async function handle(request,env,fetchUpstream=fetch) {
   const url=new URL(request.url);
   const route=url.pathname.replace(/\/{2,}/g,'/').replace(/\/+$/,'');
   if(!route.startsWith('/api/'))return env.ASSETS.fetch(request);
-  if(!['/api/config','/api/evidence'].includes(route))return json({error:'Endpoint tidak ditemukan.',code:'API_ROUTE_NOT_FOUND',path:route},404);
+  if(!['/api/config','/api/evidence','/api/submissions'].includes(route))return json({error:'Endpoint tidak ditemukan.',code:'API_ROUTE_NOT_FOUND',path:route},404);
   const isConfig=route==='/api/config';
   if(request.method!==(isConfig?'GET':'POST'))return json({error:'Metode tidak didukung.'},405);
   // Same-origin browser requests only; this is an upload endpoint, not a proxy.
@@ -41,7 +41,8 @@ export async function handle(request,env,fetchUpstream=fetch) {
       const raw=await readLimited(request);
       // Keep the upload body opaque: Apps Script validates files and sizes.
       JSON.parse(raw);
-      payload='{"action":"upload","input":'+raw+'}';
+      if (route === '/api/submissions' && raw.length > 40000) return json({error:'Data catatan terlalu besar.'},413);
+      payload=JSON.stringify({action:route === '/api/submissions' ? 'record' : 'upload',input:JSON.parse(raw)});
     }catch(error){return json({error:error.message==='SIZE'?'Total lampiran terlalu besar.':'Data unggahan tidak valid.'},error.message==='SIZE'?413:400);}
   }
   try {
