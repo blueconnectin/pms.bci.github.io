@@ -17,6 +17,30 @@ function evidenceFolderName_(metadata) {
   return name + ' - ' + type + ' - ' + date;
 }
 
+function evidenceFileName_(folderName,index,extension) {
+  return folderName + ' - Lampiran ' + ('0' + (index+1)).slice(-2) + '.' + extension.toLowerCase();
+}
+function evidenceFileManifest_(result) {
+  return result.map(function(item) {
+    var match = String(item.url || '').match(/\/file\/d\/([A-Za-z0-9_-]+)/);
+    var id = item.fileId || (match && match[1]);
+    var extension = item.name.split('.').pop().toLowerCase();
+    if (!id || ['jpg','jpeg','png','webp','pdf','docx','xlsx'].indexOf(extension) < 0) throw new Error('Data urutan lampiran tidak valid. Pilih ulang lampiran.');
+    return {id:id,extension:extension};
+  });
+}
+function renameEvidenceBatch_(folder,name,manifest) {
+  if (!Array.isArray(manifest) || !manifest.length || manifest.length > 10) throw new Error('Sesi urutan lampiran kedaluwarsa. Pilih ulang lampiran.');
+  var files = manifest.map(function(item) {
+    var file = DriveApp.getFileById(item.id), parents = file.getParents(), belongs = false;
+    while (parents.hasNext()) if (parents.next().getId() === folder.getId()) belongs = true;
+    if (!belongs) throw new Error('Lampiran telah dipindahkan dari folder pengajuan.');
+    return file;
+  });
+  files.forEach(function(file,index) {file.setName(evidenceFileName_(name,index,manifest[index].extension));});
+  folder.setName(name);
+}
+
 /** Uploads evidence into the admin-configured folder. Never grants public access. */
 function uploadEvidence(input) {
   if (PropertiesService.getScriptProperties().getProperty('EVIDENCE_UPLOADS_READY') !== 'true') throw new Error('Admin perlu menjalankan authorizeEvidenceStorage terlebih dahulu.');
@@ -62,8 +86,12 @@ function uploadEvidence(input) {
       var cached = JSON.parse(previous);
       if (input.metadata) {
         var cachedFolderId = cached[0].folderUrl.match(/\/folders\/([A-Za-z0-9_-]+)/)[1];
-        DriveApp.getFolderById(cachedFolderId).setName(requestedFolderName);
+        var cachedManifest = evidenceFileManifest_(cached);
+        renameEvidenceBatch_(DriveApp.getFolderById(cachedFolderId),requestedFolderName,cachedManifest);
+        cached.forEach(function(item,index) {item.name = evidenceFileName_(requestedFolderName,index,cachedManifest[index].extension);});
+        cache.put('evidence-files-' + cachedFolderId,JSON.stringify(cachedManifest),21600);
         cache.put('evidence-owner-' + cachedFolderId,input.requestId,21600);
+        cache.put(cacheKey,JSON.stringify(cached),21600);
       }
       return cached;
     }
@@ -72,11 +100,13 @@ function uploadEvidence(input) {
     catch (error) {throw new Error('Folder bukti tidak dapat diakses. Admin perlu memeriksa UPLOAD_FOLDER_ID dan izin Drive.');}
     batchFolder = folder.createFolder(requestedFolderName);
     var folderUrl = batchFolder.getUrl();
-    var result = files.map(function(file) {
-      var stored = batchFolder.createFile(Utilities.newBlob(file.bytes,file.type,Utilities.getUuid() + '-' + file.name));
+    var result = files.map(function(file,index) {
+      var storedName = evidenceFileName_(requestedFolderName,index,file.name.split('.').pop());
+      var stored = batchFolder.createFile(Utilities.newBlob(file.bytes,file.type,storedName));
       created.push(stored);
-      return {name:file.name,url:stored.getUrl(),folderUrl:folderUrl};
+      return {name:storedName,fileId:stored.getId(),url:stored.getUrl(),folderUrl:folderUrl};
     });
+    cache.put('evidence-files-' + batchFolder.getId(),JSON.stringify(evidenceFileManifest_(result)),21600);
     cache.put('evidence-owner-' + batchFolder.getId(),input.requestId,21600);
     cache.put(cacheKey,JSON.stringify(result),21600);
     return result;
@@ -100,7 +130,9 @@ function updateEvidenceFolder(input) {
     var root = PropertiesService.getScriptProperties().getProperty('UPLOAD_FOLDER_ID') || EVIDENCE_DEFAULT_FOLDER_ID_;
     while (parents.hasNext()) if (parents.next().getId() === root) allowed = true;
     if (!allowed) throw new Error('Folder tidak berada di penyimpanan bukti pengajuan.');
-    folder.setName(name);
+    var manifest = CacheService.getScriptCache().get('evidence-files-' + match[1]);
+    if (!manifest) throw new Error('Sesi urutan lampiran kedaluwarsa. Pilih ulang lampiran.');
+    renameEvidenceBatch_(folder,name,JSON.parse(manifest));
     return {folderUrl:folder.getUrl()};
   } finally {lock.releaseLock();}
 }

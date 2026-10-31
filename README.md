@@ -26,7 +26,7 @@ Tidak perlu menaruh kredensial Google Drive di HTML, GitHub Variables, atau chat
 
 ## Penyimpanan dan akses
 
-File disimpan di folder pilihan dan mewarisi akses folder. Jangan membuat folder publik jika buktinya mengandung informasi pribadi. Aplikasi tidak memanggil `setSharing` dan tidak mengirim undangan email. Nama file diberi UUID untuk menghindari benturan. File tetap berada di Drive walaupun pemohon membatalkan atau mengubah pilihan setelah unggah; admin mengelola retensi/penghapusan melalui Drive.
+File disimpan di folder pilihan dan mewarisi akses folder. Jangan membuat folder publik jika buktinya mengandung informasi pribadi. Aplikasi tidak memanggil `setSharing` dan tidak mengirim undangan email. Nama file mengikuti nama subfolder dengan nomor lampiran berurutan, misalnya `Dani - Sales - 2026-10-31 - Lampiran 01.jpeg`. Ekstensi sesuai format asli dipertahankan. Folder berbeda memiliki identitas Drive berbeda, sehingga nama sama tidak menimpa pengajuan lain. File tetap berada di Drive walaupun pemohon membatalkan atau mengubah pilihan setelah unggah; admin mengelola retensi/penghapusan melalui Drive.
 
 Data rekening tidak disimpan di localStorage. Jika pencatatan otomatis diaktifkan, data pengajuan dan rekening disimpan di spreadsheet tujuan pada tab Pengajuan. Pesan dan tautan Drive diteruskan ke parameter URL WhatsApp, jadi jangan membagikan URL pesan yang berisi data pribadi. Unggah ulang permintaan yang sama memakai ID dan fingerprint file untuk deduplikasi selama cache server tersedia (maksimal enam jam); ini bukan jaminan deduplikasi permanen.
 
@@ -86,3 +86,5 @@ Untuk unggahan baru, aplikasi membuat satu subfolder per batch pengajuan di dala
 Untuk unggahan baru dari formulir terbaru, subfolder memakai format **Nama Pemohon - Jenis Pengajuan - YYYY-MM-DD**, misalnya `Dani - Sales - 2026-10-31`. Tanggal berasal dari Tanggal Pengajuan yang dipilih, bukan tanggal server. Karakter pemisah/path yang tidak sesuai dibersihkan; nama tidak mengandung nomor rekening. Nama sama tetap dapat berada dalam folder berbeda karena identitas Drive-nya berbeda.
 
 Koreksi metadata sebelum WhatsApp dibuka memperbarui nama subfolder unggahan yang sama, dengan pemeriksaan sesi unggah dan folder induk; tautan tidak berubah. Koreksi identitas setelah WhatsApp dibuka membuat folder unggahan baru agar folder pengajuan sebelumnya tidak diganti namanya. Sesi pembaruan nama berlaku selama cache kepemilikan tersedia, maksimal enam jam; pilih ulang lampiran bila sesi kedaluwarsa. Folder lama di arsip tidak diubah secara massal.
+
+Nomor file mengikuti urutan lampiran yang dipilih: `Lampiran 01` sampai `Lampiran 10`. Koreksi metadata dalam sesi unggah yang sama memperbarui nama folder dan file bersama-sama tanpa mengubah isi, ekstensi, tautan, atau hak akses. File arsip lama tidak diubah secara massal oleh deployment ini.
