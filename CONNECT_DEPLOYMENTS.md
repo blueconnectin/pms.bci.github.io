@@ -1,11 +1,11 @@
 # Satu workflow: Apps Script → Cloudflare
 
-Workflow **Deploy application** (`.github/workflows/apps-script.yml`) memperbarui Apps Script terlebih dahulu, lalu Cloudflare memakai commit yang sama. Domain `payment.blueconnect.id` tetap terhubung ke Worker `blueconnect-payment` yang sudah ada. DNS dan secret `BRIDGE_SECRET` runtime tidak diganti oleh workflow.
+Workflow **Deploy application** (`.github/workflows/apps-script.yml`) memperbarui Apps Script terlebih dahulu, lalu Cloudflare memakai commit yang sama. Domain `payment.blueconnect.id` tetap terhubung ke Worker `payment-blueconnect` yang sudah ada. DNS dan secret `BRIDGE_SECRET` runtime tidak diganti oleh workflow.
 
 ## Hubungkan akses Cloudflare satu kali
 
 1. Buka Cloudflare **My Profile → API Tokens → Create Token**.
-2. Pilih template **Edit Cloudflare Workers**. Batasi Account Resources ke akun pemilik Worker `blueconnect-payment`. Biarkan izin deployment Worker/Workers Scripts dan pembacaan akun yang diperlukan template. Untuk alur ini domain sudah dipasang; tidak perlu memberikan Global API Key atau akses ke semua akun. Jika template meminta zona, batasi ke `blueconnect.id`.
+2. Pilih template **Edit Cloudflare Workers**. Batasi Account Resources ke akun pemilik Worker `payment-blueconnect`. Biarkan izin deployment Worker/Workers Scripts dan pembacaan akun yang diperlukan template. Untuk alur ini domain sudah dipasang; tidak perlu memberikan Global API Key atau akses ke semua akun. Jika template meminta zona, batasi ke `blueconnect.id`.
 3. Buat token dan simpan langsung sebagai GitHub Actions **repository secret** `CLOUDFLARE_API_TOKEN`: https://github.com/blueconnectin/payment.blueconnect/settings/secrets/actions/new. Jangan kirim token ke chat atau memasukkannya ke Git.
 4. Salin **Account ID** dari halaman akun/Worker Cloudflare. Tambahkan repository secret kedua: `CLOUDFLARE_ACCOUNT_ID`. Account ID berbeda dari Zone ID dan Worker name.
 5. Pada GitHub **Settings → Secrets and variables → Actions → Variables**, tambahkan `CLOUDFLARE_DEPLOY_ENABLED=true`.

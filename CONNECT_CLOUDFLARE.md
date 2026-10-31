@@ -32,7 +32,7 @@ Tidak perlu menambahkan kedua kunci tersebut ke HTML atau GitHub Variables. Prop
 
 | Pengaturan | Nilai |
 |---|---|
-| Worker/project name | `blueconnect-payment` |
+| Worker/project name | `payment-blueconnect` |
 | Root directory | akar repositori (`/`) |
 | Build command | `npm run build` |
 | Deploy command | `npx wrangler deploy` |
@@ -60,7 +60,7 @@ Jika API gagal, periksa secret di kedua layanan dan pastikan deployment Google m
 
 Setelah uji Worker berhasil:
 
-1. Buka Worker **blueconnect-payment → Settings → Domains & Routes**.
+1. Buka Worker **payment-blueconnect → Settings → Domains & Routes**.
 2. Pilih **Add → Custom Domain**.
 3. Masukkan **payment.blueconnect.id**, lalu konfirmasi.
 4. Cloudflare mengatur DNS dan sertifikat untuk Worker. Tidak perlu CNAME ke `script.google.com`.
