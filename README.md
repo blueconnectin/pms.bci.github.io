@@ -66,3 +66,7 @@ Status: source dan paket deployment disiapkan; pemasangan akun Cloudflare, secre
 ## Deployment terpadu
 
 Ikuti [hubungkan deployment Google dan Cloudflare](CONNECT_DEPLOYMENTS.md) untuk memakai satu workflow yang merilis backend Google dahulu, lalu tampilan domain sendiri dari commit yang sama. Aktivasi memerlukan dua GitHub Secrets Cloudflare dan variable enable satu kali. Versi yang tersaji dapat diperiksa pada `/version.json` setelah rilis Cloudflare berhasil.
+
+## Detail pekerjaan
+
+Semua 11 jenis kategori Projek menggunakan detail tanggal pekerjaan (satu tanggal atau rentang), QTY/Jumlah positif, satuan Pcs/Meter/Buah, serta keterangan wajib. Meter menerima pecahan; Pcs/Buah menggunakan bilangan bulat. Operasional menggunakan tanggal pekerjaan (satu tanggal atau rentang), jenis pekerjaan Project/Maintenance, serta keterangan wajib. Tanggal akhir tidak boleh lebih awal dari tanggal mulai. Semua detail disertakan dalam ringkasan dan pesan WhatsApp; field jenis lain dinonaktifkan agar tidak ikut terkirim. Detail Sales, Manage Service, dan Reimburst tetap dipertahankan.
