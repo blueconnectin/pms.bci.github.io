@@ -71,8 +71,8 @@ Jangan membuat redirect rule untuk subdomain ini ke Apps Script. Jangan menaruh 
 
 ## Pembaruan berikutnya
 
-- Push ke `main` memperbarui source Google lewat GitHub Actions dan Worker lewat Cloudflare Git Builds.
-- Keduanya pipeline terpisah. Untuk perubahan yang mengubah kontrak API, tunggu backend Google siap sebelum merilis frontend yang bergantung pada kontrak baru.
+- Untuk deployment berurutan dari satu workflow, ikuti [panduan deployment terpadu](CONNECT_DEPLOYMENTS.md). Setelah akses Cloudflare diaktifkan, GitHub memperbarui Google dahulu, lalu Worker dari commit yang sama.
+- Bila masih memakai Git Builds Cloudflare terpisah, keduanya belum terhubung; nonaktifkan build otomatis Cloudflare setelah workflow terpadu terbukti berhasil.
 - Secret Worker tetap menjadi konfigurasi runtime, bukan file build. Jangan mengubah binding rahasia menjadi plaintext variable.
 - Custom Domain ditambahkan lewat dashboard, bukan melalui `wrangler.jsonc`, agar deployment awal tidak mengubah DNS sebelum uji Worker.
 - Deployment lama di Google masih dapat dipakai selama migrasi; jangan menghapusnya karena endpoint upload Worker menggunakannya.
@@ -88,4 +88,4 @@ npx wrangler deploy --dry-run
 
 `node tests/cloudflare.browser.cjs` menguji alur browser pada domain yang sama dengan upstream Google tiruan (memerlukan Playwright/Chromium pada environment pengembangan). Pengujian tersebut tidak membuat file di Drive atau mengirim pesan WhatsApp. Unggah nyata dan DNS baru dinyatakan berhasil setelah diuji di akun pengguna.
 
-Hanya `public/index.html` dan header keamanan yang dibangun menjadi static assets; file backend, konfigurasi lokal, serta kredensial tidak diterbitkan sebagai aset web. Folder `public/`, `.wrangler/`, dan `.dev.vars*` diabaikan Git.
+Hanya `public/index.html`, metadata commit `public/version.json`, dan header keamanan yang dibangun menjadi static assets; file backend, konfigurasi lokal, serta kredensial tidak diterbitkan sebagai aset web. Folder `public/`, `.wrangler/`, dan `.dev.vars*` diabaikan Git.

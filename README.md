@@ -62,3 +62,7 @@ Nomor tujuan WhatsApp dikonfigurasi melalui `ADMIN_WHATSAPP` di `Index.html`. Kr
 Versi Cloudflare Worker + Static Assets tersedia untuk menampilkan formulir pada domain sendiri tanpa redirect ke Google. Ikuti [panduan Cloudflare](CONNECT_CLOUDFLARE.md). Unggah Drive melewati endpoint server dengan tanda tangan HMAC; kunci berada di Cloudflare Secrets dan Script Properties. Tidak ada token Google di browser.
 
 Status: source dan paket deployment disiapkan; pemasangan akun Cloudflare, secret penghubung, Custom Domain, serta uji unggah pada domain sendiri harus dilakukan sebelum menyatakan domain aktif. Deployment Google yang sudah ada tetap berfungsi dan dipertahankan sebagai backend Drive.
+
+## Deployment terpadu
+
+Ikuti [hubungkan deployment Google dan Cloudflare](CONNECT_DEPLOYMENTS.md) untuk memakai satu workflow yang merilis backend Google dahulu, lalu tampilan domain sendiri dari commit yang sama. Aktivasi memerlukan dua GitHub Secrets Cloudflare dan variable enable satu kali. Versi yang tersaji dapat diperiksa pada `/version.json` setelah rilis Cloudflare berhasil.
