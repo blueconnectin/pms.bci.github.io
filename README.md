@@ -10,7 +10,7 @@ Isi Nama Pemohon, Tanggal Pengajuan, Jenis Pengajuan (Sales, Manage Service, Rei
 
 Setelah unggah Drive diaktifkan, pemohon memilih 1–3 bukti (JPG/JPEG, PNG, WEBP, PDF, DOCX, XLSX), maksimal 5 MB per file dan 10 MB total. Tombol **Periksa Pengajuan** mengunggah file, lalu menampilkan ringkasan beserta tautan bukti. Pemohon kemudian membuka WhatsApp dengan pesan terisi dan menekan **Kirim** sendiri. Lampiran berupa tautan Drive, bukan file media WhatsApp. Tidak ada pengiriman pesan otomatis.
 
-Bila penyimpanan Drive belum diotorisasi, formulir tetap menyediakan alur manual: pemohon melampirkan bukti langsung di WhatsApp. Tidak ada unggah ke Drive dari mode tersebut.
+Bila penyimpanan Drive belum diotorisasi atau koneksinya gagal, kolom lampiran tetap terlihat dengan pesan masalah dan tombol coba kembali. Pengajuan diblokir sampai koneksi siap; aplikasi tidak mengalihkan lampiran menjadi manual di WhatsApp.
 
 ## Aktivasi Google Drive satu kali
 
@@ -34,7 +34,7 @@ Endpoint upload hanya menerima format/ukuran yang divalidasi, memeriksa header b
 
 ## Pengembangan dan pengujian
 
-Tidak ada build aplikasi. Jalankan server statis untuk menguji tampilan dan mode lampiran manual:
+Tidak ada build aplikasi. Jalankan server statis untuk menguji tampilan; unggah memerlukan backend yang tersambung:
 
 ```sh
 cd /workspace/payment.blueconnect

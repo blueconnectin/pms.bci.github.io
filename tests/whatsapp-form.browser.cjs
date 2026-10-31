@@ -9,7 +9,9 @@ const {chromium} = require('playwright');
   const harness = '<!doctype html><iframe title="Apps Script sandbox" sandbox="allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox" src="/Index.html" style="width:100%;height:1500px;border:0"></iframe>';
   const server = http.createServer((request, response) => {
     response.setHeader('Content-Type', 'text/html; charset=utf-8');
-    response.end(request.url === '/Index.html' ? html.replace('<script>', '<script>var form, review, labels;</script><script>') : harness);
+    if(request.url === '/api/config'){response.setHeader('Content-Type','application/json');response.end(JSON.stringify({enabled:true}));return;}
+    if(request.url === '/api/evidence'){response.setHeader('Content-Type','application/json');response.end(JSON.stringify([{name:'bukti.pdf',url:'https://drive.google.com/file/d/test/view'}]));return;}
+    response.end(request.url === '/Index.html' ? html.replace('<script>', '<script>var form, review, labels;window.google={script:{run:{withSuccessHandler:function(fn){return {withFailureHandler:function(){return {getEvidenceConfiguration:function(){fn({enabled:true})},uploadEvidence:function(){fn([{name:"bukti.pdf",url:"https://drive.google.com/file/d/test/view"}])}}}}}}}};</script><script>') : harness);
   });
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
   let browser;
@@ -28,6 +30,7 @@ const {chromium} = require('playwright');
       for (const [id,value] of Object.entries({applicant:'Petugas & Tim',requestDate:'2026-10-31',bank:'BCA',accountNumber:'0012345678',accountOwner:'Pemilik <Uji>'})) await frame.locator('#'+id).fill(value);
       await frame.getByRole('radio',{name:'Operasional',exact:true}).check();
       await frame.locator('#confirmation').check();
+      await frame.locator('#evidenceFiles').setInputFiles({name:'bukti.pdf',mimeType:'application/pdf',buffer:Buffer.from('%PDF-test')});
       await frame.locator('#reviewButton').click();
       assert.equal(await frame.locator('#reviewDialog').isVisible(),true);
       assert.equal(await frame.locator('#requestForm').isVisible(),false);

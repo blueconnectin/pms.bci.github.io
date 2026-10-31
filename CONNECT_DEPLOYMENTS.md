@@ -31,3 +31,9 @@ Selanjutnya push perubahan aplikasi ke `main` memicu kedua deployment secara ber
 - Domain menampilkan versi lama: cocokkan `/version.json` dengan commit run dan pastikan tidak ada pipeline Cloudflare lama yang merilis ulang source lama.
 
 Konfigurasi ini menambahkan `/version.json` yang hanya memuat commit publik, tanpa kredensial/data pengguna. HTML memakai Cache-Control no-cache dan metadata versi memakai no-store untuk memudahkan pemeriksaan rilis.
+
+## Pastikan unggah Drive tetap aktif
+
+Tambahkan GitHub repository secret **BRIDGE_SECRET**, berisi nilai yang sama persis dengan Script Property **CLOUDFLARE_BRIDGE_SECRET** di Apps Script. Workflow memasangnya ke Worker sebagai encrypted secret setelah deployment melalui `wrangler secret put BRIDGE_SECRET`. Jangan mengganti nilainya dengan API token Cloudflare atau membuat nilai berbeda. Jangan kirim nilainya ke chat.
+
+Nilai yang dahulu ditambahkan sebagai plaintext variable Cloudflare bisa terganti ketika Wrangler menerapkan `vars` dari repositori. Encrypted secrets dipertahankan. Jika GitHub secret belum tersedia, workflow mengeluarkan warning dan tidak mengubah secret runtime yang sudah ada. Untuk memperbaiki error `Koneksi Drive belum dikonfigurasi oleh admin.`, simpan repository secret tersebut lalu jalankan ulang workflow dengan publish aktif.

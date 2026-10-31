@@ -54,7 +54,7 @@ Buka URL Worker yang disediakan Cloudflare. Periksa:
 - Isi formulir dan unggah satu bukti contoh. Pastikan file masuk folder Drive, ringkasan menampilkan tautan yang benar, dan admin dapat membukanya.
 - Tombol WhatsApp mengisi pesan beserta tautan bukti; pengiriman tetap dilakukan pemohon.
 
-Jika API gagal, periksa secret di kedua layanan dan pastikan deployment Google memuat `doPost`, dapat diakses Worker tanpa login, dan `EVIDENCE_UPLOADS_READY=true`. Worker tidak mencetak token atau data file ke log. Bila backend tidak tersedia, formulir memberi tahu pengguna dan menyediakan alur lampiran manual.
+Jika API gagal, periksa secret di kedua layanan dan pastikan deployment Google memuat `doPost`, dapat diakses Worker tanpa login, dan `EVIDENCE_UPLOADS_READY=true`. Worker tidak mencetak token atau data file ke log. Bila backend tidak tersedia, formulir mempertahankan kolom unggah, menampilkan error, dan memblokir pengajuan sampai koneksi diperbaiki.
 
 ## 5. Pasang domain sendiri
 
