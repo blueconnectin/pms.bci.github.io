@@ -3,7 +3,7 @@ var EVIDENCE_DEFAULT_FOLDER_ID_ = '1t3eqlI9VK7y4Gt157bP4_YLKuyfSsM8B';
 /** Serves the WhatsApp request form as a Google Apps Script Web App. */
 function doGet() {
   return HtmlService.createHtmlOutputFromFile('Index')
-    .setTitle('Formulir Pengajuan · Blue Connect')
+    .setTitle('Formulir pengajuan Invoice · Blue Connect')
     .addMetaTag('viewport', 'width=device-width, initial-scale=1');
 }
 
