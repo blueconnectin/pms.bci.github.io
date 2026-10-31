@@ -69,7 +69,7 @@ Ikuti [hubungkan deployment Google dan Cloudflare](CONNECT_DEPLOYMENTS.md) untuk
 
 ## Detail pekerjaan
 
-Semua 11 jenis kategori Projek menggunakan detail tanggal pekerjaan (satu tanggal atau rentang), QTY/Jumlah positif, satuan Pcs/Meter/Buah, serta keterangan wajib. Meter menerima pecahan; Pcs/Buah menggunakan bilangan bulat. Operasional menggunakan tanggal pekerjaan (satu tanggal atau rentang), jenis pekerjaan Project/Maintenance, serta keterangan wajib. Tanggal akhir tidak boleh lebih awal dari tanggal mulai. Semua detail disertakan dalam ringkasan dan pesan WhatsApp; field jenis lain dinonaktifkan agar tidak ikut terkirim. Detail Sales, Manage Service, dan Reimburst tetap dipertahankan.
+Semua 11 jenis kategori Projek menggunakan detail tanggal pekerjaan (satu tanggal atau rentang), QTY/Jumlah positif, satuan Pcs/Meter/Buah, serta keterangan wajib. Meter menerima pecahan; Pcs/Buah menggunakan bilangan bulat. Operasional menggunakan tanggal pekerjaan (satu tanggal atau rentang), keterangan wajib tanpa pilihan Project/Maintenance. Tanggal akhir tidak boleh lebih awal dari tanggal mulai. Semua detail disertakan dalam ringkasan dan pesan WhatsApp; field jenis lain dinonaktifkan agar tidak ikut terkirim. Detail Sales, Manage Service, dan Reimburst tetap dipertahankan.
 
 ## Format pesan WhatsApp dan folder bukti
 
