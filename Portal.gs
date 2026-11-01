@@ -122,6 +122,14 @@ function portalEvidence_(input,existing,owner,invoiceId){
  var evidence=manifest.map(function(m){var file=DriveApp.getFileById(m.id);return {fileId:m.id,name:file.getName(),url:file.getUrl(),folderUrl:folder.getUrl()};});
  portalPut_('Bukti',match[1],{owner:owner,invoiceId:invoiceId});return evidence;
 }
+function portalEnsureNumber_(invoice){
+ if(invoice.number)return false;
+ var date=recordDate_(invoice.data.requestDate),month=Number(date.slice(5,7)),roman=['I','II','III','IV','V','VI','VII','VIII','IX','X','XI','XII'];
+ var props=PropertiesService.getScriptProperties(),sequence=Number(props.getProperty('PORTAL_INVOICE_SEQUENCE')||0)+1;
+ if(!Number.isSafeInteger(sequence)||sequence<1)throw Error('Urutan nomor invoice tidak valid.');
+ props.setProperty('PORTAL_INVOICE_SEQUENCE',String(sequence));
+ invoice.number='INV'+String(sequence).padStart(3,'0')+'/'+invoice.data.projectType+'/'+roman[month-1]+'/'+date.slice(0,4);return true;
+}
 function portalDispatch_(action,input,actor){
  var lock=LockService.getScriptLock();lock.waitLock(30000);
  try {
@@ -143,7 +151,7 @@ function portalDispatch_(action,input,actor){
    if(!work||(t.category!==undefined&&t.category!==work.category)||work.name==='Reimburst'||portalMasterNames_('project',true).indexOf(t.projectType)<0||!master.some(function(e){return e.kind==='unit'&&e.name===t.unit&&e.active&&(work.category!=='Projek'||e.projectUnit);})||!Number.isSafeInteger(Number(t.price))||Number(t.price)<=0)throw Error('Tarif tidak valid. Pilih proyek, pekerjaan, dan satuan aktif.');
    t={projectType:t.projectType,category:work.category,type:recordText_(t.type,'Jenis pekerjaan',80),unit:t.unit,price:Number(t.price),updatedBy:account.email,updatedAt:new Date().toISOString()};portalPut_('Tarif',JSON.stringify([t.projectType,t.type,t.unit]),t);if(work.category==='Non Projek'&&work.unit!==t.unit)portalSaveMaster_({entry:{kind:'work',name:work.name,category:work.category,active:work.active,unit:t.unit}},account);return t;
   }
-  if(action==='list')return portalRows_('Invoice').map(function(r){return r.value;}).filter(function(i){return admin||(portalFinance_(account)&&i.status!=='DRAFT')||i.owner===account.id;}).map(function(i){return {id:i.id,number:i.number||'',applicant:i.profile.name,type:i.data.requestType,status:i.status,total:i.total,updatedAt:i.updatedAt};}).sort(function(a,b){return b.updatedAt.localeCompare(a.updatedAt);});
+  if(action==='list')return portalRows_('Invoice').map(function(r){return r.value;}).filter(function(i){return admin||(portalFinance_(account)&&i.status!=='DRAFT')||i.owner===account.id;}).map(function(i){if(i.status!=='DRAFT'&&portalEnsureNumber_(i))portalPut_('Invoice',i.id,i);return {id:i.id,number:i.number||'',applicant:i.profile.name,type:i.data.requestType,status:i.status,total:i.total,updatedAt:i.updatedAt};}).sort(function(a,b){return b.updatedAt.localeCompare(a.updatedAt);});
   if(action==='draft'){
    if(portalRole_(account)!=='PEMOHON')throw Error('Pembuatan invoice menggunakan akun Pemohon.');
    if(!portalComplete_(account.profile))throw Error('Lengkapi Profil Saya terlebih dahulu.');
@@ -160,11 +168,11 @@ function portalDispatch_(action,input,actor){
    portalPrice_(invoice);invoice.priceConfirmed=false;portalHistory_(invoice,account,'SAVE_DRAFT');portalPut_('Invoice',invoice.id,invoice);return invoice;
   }
   var inv=portalOwn_(account,portalGet_('Invoice',input.id));
-  if(action==='get'){var view=JSON.parse(JSON.stringify(inv));view.displayDetails=portalDetailLines_(inv.data);return view;}
+  if(action==='get'){if(inv.status!=='DRAFT'&&portalEnsureNumber_(inv))portalPut_('Invoice',inv.id,inv);var view=JSON.parse(JSON.stringify(inv));view.displayDetails=portalDetailLines_(inv.data);return view;}
   if(action==='submit'){
    if(portalRole_(account)!=='PEMOHON'||inv.owner!==account.id||['DRAFT','REVISION'].indexOf(inv.status)<0)throw Error('Pengajuan tidak dapat diajukan.');
    // Prices shown in the draft are the ones the applicant submits, not a new live tariff.
-   inv.status='SUBMITTED';inv.priceConfirmed=inv.priced;portalHistory_(inv,account,'SUBMIT');
+   portalEnsureNumber_(inv);inv.status='SUBMITTED';inv.priceConfirmed=inv.priced;portalHistory_(inv,account,'SUBMIT');
   } else if(action==='confirm'){
    if(portalRole_(account)!=='PEMOHON'||inv.owner!==account.id||inv.status!=='CONFIRMATION'||!inv.priced)throw Error('Konfirmasi tidak tersedia.');inv.priceConfirmed=true;inv.status='SUBMITTED';portalHistory_(inv,account,'CONFIRM_PRICE');
   } else if(action==='review'){
@@ -173,8 +181,7 @@ function portalDispatch_(action,input,actor){
    if(decision==='REVISION'||decision==='REJECTED'){inv.status=decision;note=recordText_(note,'Catatan admin',1000);}
    else if(decision==='APPROVED'){
     if(!inv.priced||!inv.priceConfirmed)throw Error('Tarif dan nilai harus dikonfirmasi pemohon terlebih dahulu.');
-    var props=PropertiesService.getScriptProperties(),sequence=Number(props.getProperty('PORTAL_INVOICE_SEQUENCE')||0)+1;props.setProperty('PORTAL_INVOICE_SEQUENCE',String(sequence));
-    inv.number='INV/BCI/'+new Date().toISOString().slice(0,7).replace('-','')+'/'+('000000'+sequence).slice(-6);inv.status='APPROVED';inv.approvedAt=new Date().toISOString();inv.approvedBy=account.email;
+    portalEnsureNumber_(inv);inv.status='APPROVED';inv.approvedAt=new Date().toISOString();inv.approvedBy=account.email;
     var pdf=portalCreatePdf_(inv);inv.pdfId=pdf.getId();
    } else throw Error('Keputusan tidak valid.');portalHistory_(inv,account,decision,note);
   } else if(action==='reprice'){

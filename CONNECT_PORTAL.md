@@ -107,3 +107,7 @@ Invoice lama mempertahankan satuan dan nilai sebelumnya. Aksi **Perbarui tarif /
 Satuan awal **Sales = HC** dan **Operasional = Hari** diterapkan satu kali pada Master, termasuk konfigurasi lama. Setelah itu Admin tetap dapat mengubahnya melalui Master atau saat menyimpan Tarif. Tarif lama dan invoice tersimpan tidak diubah otomatis. Isi harga per HC/per Hari pada tab Tarif sesuai kebijakan perusahaan.
 
 Operasional dengan satu tanggal menggunakan jumlah 1 Hari. Rentang 30 Oktober sampai 1 November menggunakan jumlah 3 Hari. Total = jumlah hari × harga per Hari. Jumlah hari ditampilkan pada formulir dan ringkasan serta dihitung ulang di server. Perubahan harga/satuan terhadap pengajuan tersimpan hanya berlaku melalui perhitungan ulang dan konfirmasi Pemohon.
+
+## Format nomor invoice
+
+Nomor diberikan saat invoice pertama kali diajukan: **INV001/FTTH/XI/2026**. Urutan memakai minimal tiga digit (001, 002, …, 1000) dan berlanjut secara global, tanpa reset bulanan/tahunan. Jenis proyek, bulan Romawi, dan tahun diambil dari data tanggal pengajuan saat nomor diterbitkan. Nomor tetap selama revisi, persetujuan, dan pembayaran; PDF final memakai nomor yang sama. Draft belum memiliki nomor. Pengajuan lama yang belum bernomor memperoleh nomor saat daftar/rinciannya dibuka. Nomor lama yang sudah terbit dipertahankan agar konsisten dengan PDF/arsip sebelumnya.
