@@ -69,10 +69,10 @@ function portalMasterDefaults_(){
  var result=[];
  ['FTTH','FWA'].forEach(function(name){result.push({kind:'project',name:name,active:true});});
  ['Instalasi ODC','Instalasi ODP','Instalasi Closure','Join Core','Instalasi OTB','Penarikan Kabel Feeder','Penarikan Kabel Precon','Pemasangan Tiang','Pemasangan Aksesoris KU','Pemasangan X Frame 40 X 40','Pemasangan X Frame 80 X 80','Permit'].forEach(function(name){result.push({kind:'work',name:name,category:'Projek',active:true});});
- ['Sales','Manage Service','Reimburst','Operasional'].forEach(function(name){result.push({kind:'work',name:name,category:'Non Projek',active:true});});
+ ['Sales','Manage Service','Reimburst','Operasional'].forEach(function(name){result.push({kind:'work',name:name,category:'Non Projek',unit:({Sales:'Sales','Manage Service':'Periode',Reimburst:'Pengeluaran',Operasional:'Pengajuan'})[name],active:true});});
  ['Pcs','Meter','Buah','HC','Sales','Periode','Pengajuan','Pengeluaran'].forEach(function(name){result.push({kind:'unit',name:name,decimal:name==='Meter',projectUnit:['Pcs','Meter','Buah','HC'].indexOf(name)>=0,active:true});});return result;
 }
-function portalMaster_(){var entries=portalMasterDefaults_();if(PropertiesService.getScriptProperties().getProperty('SUBMISSION_SPREADSHEET_ID'))portalRows_('Master').forEach(function(row){var index=entries.findIndex(function(entry){return entry.kind===row.value.kind&&entry.name===row.value.name;});if(index>=0)entries[index]=row.value;else entries.push(row.value);});return entries;}
+function portalMaster_(){var entries=portalMasterDefaults_();if(PropertiesService.getScriptProperties().getProperty('SUBMISSION_SPREADSHEET_ID'))portalRows_('Master').forEach(function(row){var index=entries.findIndex(function(entry){return entry.kind===row.value.kind&&entry.name===row.value.name;});if(index>=0)entries[index]=Object.assign({},entries[index],row.value);else entries.push(row.value);});return entries;}
 function portalMasterNames_(kind,active){return portalMaster_().filter(function(entry){return entry.kind===kind&&(!active||entry.active);}).map(function(entry){return entry.name;});}
 function portalSaveMaster_(input,account){
  if(!portalAdmin_(account))throw Error('Hanya Admin yang dapat mengelola master data.');var m=input.entry||{},kind=m.kind,name=recordText_(m.name,'Nama',80),entries=portalMaster_();
@@ -83,20 +83,25 @@ function portalSaveMaster_(input,account){
  var entry=existing?JSON.parse(JSON.stringify(existing)):{kind:kind,name:name};entry.active=m.active;
  if(!existing&&kind==='work')entry.category='Projek';
  if(!existing&&kind==='unit'){if(typeof m.decimal!=='boolean')throw Error('Pilih aturan jumlah satuan.');entry.decimal=m.decimal;entry.projectUnit=true;}
- if(kind==='unit'&&existing&&!existing.projectUnit&&!m.active)throw Error('Satuan khusus Non Projek tetap diperlukan.');
+ if(kind==='work'&&entry.category==='Non Projek'){
+  if(m.unit===undefined)m.unit=entry.unit;
+  if(entry.name==='Reimburst'&&m.unit!=='Pengeluaran')throw Error('Reimburst menggunakan satuan Pengeluaran.');
+  if(entry.active&&!entries.some(function(e){return e.kind==='unit'&&e.name===m.unit&&e.active;}))throw Error('Pilih satuan aktif dari master data.');entry.unit=m.unit;
+ }
+ if(kind==='unit'&&!m.active&&entries.some(function(e){return e.kind==='work'&&e.active&&e.category==='Non Projek'&&e.unit===name;}))throw Error('Satuan masih dipakai pekerjaan Non Projek aktif. Ubah satuan pekerjaan terlebih dahulu.');
  if(!m.active&&entries.filter(function(other){return other.kind===kind&&other.name!==name&&other.active&&(kind!=='work'||other.category===entry.category)&&(kind!=='unit'||other.projectUnit);}).length===0)throw Error('Minimal satu pilihan aktif harus tersedia.');
  entry.updatedAt=new Date().toISOString();entry.updatedBy=account.email;portalPut_('Master',JSON.stringify([kind,name]),entry);return entry;
 }
-function portalValidateMaster_(data){var entries=portalMaster_();function active(kind,name){return entries.find(function(e){return e.kind===kind&&e.name===name&&e.active;});}var work=active('work',data.requestType);if(!active('project',data.projectType)||!work||work.category!==data.requestCategory)throw Error('Jenis proyek atau pekerjaan sudah tidak aktif. Pilih ulang dari master data.');if(data.requestCategory==='Projek'){var unit=active('unit',data.projectWorkUnit);if(!unit||!unit.projectUnit)throw Error('Satuan tidak aktif. Pilih ulang satuan pekerjaan.');}}
+function portalValidateMaster_(data){var entries=portalMaster_();function active(kind,name){return entries.find(function(e){return e.kind===kind&&e.name===name&&e.active;});}var work=active('work',data.requestType);if(!active('project',data.projectType)||!work||work.category!==data.requestCategory)throw Error('Jenis proyek atau pekerjaan sudah tidak aktif. Pilih ulang dari master data.');if(data.requestCategory==='Non Projek'&&!active('unit',work.unit))throw Error('Satuan pekerjaan Non Projek tidak aktif. Hubungi Admin.');if(data.requestCategory==='Projek'){var unit=active('unit',data.projectWorkUnit);if(!unit||!unit.projectUnit)throw Error('Satuan tidak aktif. Pilih ulang satuan pekerjaan.');}}
 function portalItems_(data){
  var tariffs=portalRows_('Tarif').map(function(r){return r.value;});
  function item(description,qty,unit,amount){var rate=amount;if(rate==null){var found=tariffs.find(function(t){return t.projectType===data.projectType&&t.type===data.requestType&&t.unit===unit;});rate=found?found.price:null;}var total=rate==null?null:Math.round(qty*rate);if(total!==null&&(!Number.isSafeInteger(total)||total<=0))throw Error('Nilai invoice di luar batas.');return {description:description,qty:qty,unit:unit,price:rate,amount:total};}
  if(data.requestType==='Reimburst')return data.reimbursementItems.map(function(r){return item(r.object,1,'Pengeluaran',Number(r.amount));});
  var qty=data.requestCategory==='Projek'?Number(data.projectWorkQuantity):(data.requestType==='Sales'?Number(data.salesCount):1);
- var unit=data.requestCategory==='Projek'?data.projectWorkUnit:(data.requestType==='Sales'?'Sales':(data.requestType==='Manage Service'?'Periode':'Pengajuan'));
+ var unit=data.requestCategory==='Projek'?data.projectWorkUnit:(data.nonProjectUnit||({Sales:'Sales','Manage Service':'Periode',Operasional:'Pengajuan'})[data.requestType]);
  return [item(data.requestType,qty,unit,null)];
 }
-function portalPrice_(invoice){invoice.items=portalItems_(invoice.data);invoice.priced=invoice.items.every(function(i){return i.price!==null;});invoice.total=invoice.priced?invoice.items.reduce(function(t,i){return t+i.amount;},0):null;if(invoice.total!==null&&!Number.isSafeInteger(invoice.total))throw Error('Total terlalu besar.');}
+function portalPrice_(invoice){if(invoice.data.requestCategory==='Non Projek'){var work=portalMaster_().find(function(e){return e.kind==='work'&&e.name===invoice.data.requestType;});invoice.data.nonProjectUnit=work.unit;}invoice.items=portalItems_(invoice.data);invoice.priced=invoice.items.every(function(i){return i.price!==null;});invoice.total=invoice.priced?invoice.items.reduce(function(t,i){return t+i.amount;},0):null;if(invoice.total!==null&&!Number.isSafeInteger(invoice.total))throw Error('Total terlalu besar.');}
 function portalEvidence_(input,existing,owner,invoiceId){
  var match=String(input.folderUrl||'').match(/^https:\/\/drive\.google\.com\/drive\/folders\/([A-Za-z0-9_-]+)$/);if(!match)throw Error('Folder bukti tidak valid.');
  var folder=DriveApp.getFolderById(match[1]),parents=folder.getParents(),ok=false,root=PropertiesService.getScriptProperties().getProperty('UPLOAD_FOLDER_ID')||EVIDENCE_DEFAULT_FOLDER_ID_;
@@ -125,8 +130,8 @@ function portalDispatch_(action,input,actor){
   if(action==='saveTariff'){
    if(!admin)throw Error('Hanya admin proyek.');var t=input.tariff||{};
    var master=portalMaster_(),work=master.find(function(e){return e.kind==='work'&&e.name===t.type&&e.active;});
-   var special={Sales:'Sales','Manage Service':'Periode',Operasional:'Pengajuan'};
-   if(!work||work.name==='Reimburst'||portalMasterNames_('project',true).indexOf(t.projectType)<0||!master.some(function(e){return e.kind==='unit'&&e.name===t.unit&&e.active&&(work.category==='Projek'?e.projectUnit:e.name===special[t.type]);})||!Number.isSafeInteger(Number(t.price))||Number(t.price)<=0)throw Error('Tarif tidak valid. Pilih proyek, pekerjaan, dan satuan aktif.');
+
+   if(!work||work.name==='Reimburst'||portalMasterNames_('project',true).indexOf(t.projectType)<0||!master.some(function(e){return e.kind==='unit'&&e.name===t.unit&&e.active&&(work.category==='Projek'?e.projectUnit:e.name===work.unit);})||!Number.isSafeInteger(Number(t.price))||Number(t.price)<=0)throw Error('Tarif tidak valid. Pilih proyek, pekerjaan, dan satuan aktif.');
    t={projectType:t.projectType,type:recordText_(t.type,'Jenis pekerjaan',80),unit:t.unit,price:Number(t.price),updatedBy:account.email,updatedAt:new Date().toISOString()};portalPut_('Tarif',JSON.stringify([t.projectType,t.type,t.unit]),t);return t;
   }
   if(action==='list')return portalRows_('Invoice').map(function(r){return r.value;}).filter(function(i){return admin||(portalFinance_(account)&&i.status!=='DRAFT')||i.owner===account.id;}).map(function(i){return {id:i.id,number:i.number||'',applicant:i.profile.name,type:i.data.requestType,status:i.status,total:i.total,updatedAt:i.updatedAt};}).sort(function(a,b){return b.updatedAt.localeCompare(a.updatedAt);});
@@ -186,6 +191,7 @@ function portalDetailLines_(data) {
  else if(data.requestType==='Manage Service')lines.push(['Periode penagihan',period(d.periodePenagihan)]);
  else if(data.requestType==='Reimburst')d.rincian.forEach(function(item,i){lines.push(['Rincian '+(i+1),item.objek+' — Rp '+item.nominal.toLocaleString('id-ID')]);});
  else {lines.push(['Tanggal pekerjaan',period(d.tanggal)]);if(data.requestCategory==='Projek')lines.push(['QTY/Jumlah',String(d.jumlah)+' '+d.satuan]);lines.push(['Keterangan',d.keterangan]);}
+ if(data.requestCategory==='Non Projek'&&data.nonProjectUnit)lines.push(['Satuan',data.nonProjectUnit]);
  return lines;
 }
 function portalEscape_(value){return String(value==null?'':value).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}

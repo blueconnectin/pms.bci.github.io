@@ -51,7 +51,7 @@ main{margin-top:24px}
 <div id="projectRequests" class="full" hidden><label for="projectRequestType">Jenis pekerjaan projek<span class="required" aria-hidden="true">*</span></label><select id="projectRequestType" class="project-request-select" name="projectRequestType" disabled><option value="">Pilih jenis pekerjaan</option><option value="Instalasi ODC">Instalasi ODC</option><option value="Instalasi ODP">Instalasi ODP</option><option value="Instalasi Closure">Instalasi Closure</option><option value="Join Core">Join Core</option><option value="Instalasi OTB">Instalasi OTB</option><option value="Penarikan Kabel Feeder">Penarikan Kabel Feeder</option><option value="Penarikan Kabel Precon">Penarikan Kabel Precon</option><option value="Pemasangan Tiang">Pemasangan Tiang</option><option value="Pemasangan Aksesoris KU">Pemasangan Aksesoris KU</option><option value="Pemasangan X Frame 40 X 40">Pemasangan X Frame 40 X 40</option><option value="Pemasangan X Frame 80 X 80">Pemasangan X Frame 80 X 80</option></select></div>
 
 </div>
-<section id="salesDetails" class="sales-details" aria-labelledby="salesDetailsTitle" hidden>
+<p id="nonProjectUnitInfo" class="full" hidden>Satuan pengajuan: <strong id="nonProjectUnitName"></strong></p><section id="salesDetails" class="sales-details" aria-labelledby="salesDetailsTitle" hidden>
 <h3 id="salesDetailsTitle">Detail pengajuan Sales</h3>
 <div class="grid"><div><label for="salesPeriodStart">Periode pengajuan — mulai<span class="required" aria-hidden="true">*</span></label><input id="salesPeriodStart" name="salesPeriodStart" type="date" disabled></div><div><label for="salesPeriodEnd">Periode pengajuan — selesai<span class="required" aria-hidden="true">*</span></label><input id="salesPeriodEnd" name="salesPeriodEnd" type="date" disabled></div><div class="full"><label for="salesCount">Jumlah sales<span class="required" aria-hidden="true">*</span></label><input id="salesCount" name="salesCount" type="number" min="1" step="1" inputmode="numeric" placeholder="Masukkan jumlah sales yang diajukan" aria-describedby="salesReconciliationNote" disabled></div></div>
 <p id="salesReconciliationNote" class="notice">Jumlah aktual akan dihitung berdasarkan hasil rekonsiliasi dengan admin proyek.</p>
@@ -85,7 +85,7 @@ const ADMIN_WHATSAPP = '6288223062197';
 const form = document.getElementById('requestForm');
 const review = document.getElementById('reviewDialog');
 const evidenceInput = document.getElementById('evidenceFiles');
-let masterUnits = null;
+let masterUnits = null, masterWorks = [];
 let portalMode = false, portalDraftId = '', portalExistingEvidence = false, portalDraftLoaded = false;
 let driveUploadsEnabled = true, evidenceReady = false, recordingEnabled = false;
 let submissionRecordId = '', lastSavedSnapshot = '', recordFinalized = false, uploadedFolderMetadata = '';
@@ -96,7 +96,7 @@ document.getElementById('requestDate').value = localDate(new Date());
 document.getElementById('year').textContent = new Date().getFullYear();
 function requestData() {
   const data = Object.fromEntries(new FormData(form));
-  data.requestType = selectedRequestType();
+  data.requestType = selectedRequestType();const work=masterWorks.find(e=>e.name===data.requestType);if(work?.category==='Non Projek')data.nonProjectUnit=work.unit;
   for (const key of Object.keys(labels)) data[key] = (data[key] || '').trim();
   if (isReimbursement()) data.reimbursementItems = reimbursementRows().map(row => ({object:row.querySelector('[data-reimbursement-object]').value.trim(),amount:Number(row.querySelector('[data-reimbursement-amount]').value)}));
   return data;
@@ -213,6 +213,9 @@ function workDateText(data,prefix) {
  return data[prefix + 'DateMode'] === 'range' ? first + ' — ' + displayDate(data[prefix + 'DateEnd']) : first;
 }
 function syncRequestDetails() {
+ const selectedWork=masterWorks.find(e=>e.name===selectedRequestType());const unit=selectedWork?.category==='Non Projek'?selectedWork.unit:'';
+ document.getElementById('nonProjectUnitInfo').hidden=!unit;document.getElementById('nonProjectUnitName').textContent=unit||'';
+
  const active = isSales();
  document.getElementById('salesDetails').hidden = !active;
  salesInputs.forEach(key => {form.elements[key].disabled = !active;form.elements[key].required = active;form.elements[key].setCustomValidity('');});
@@ -250,6 +253,7 @@ function submissionEntries(data) {
   detail.push(['Total reimburst',rupiah(items.reduce((total,item) => total + item.amount,0))]);
   entries.splice(5,0,...detail);
  }
+ if(data.requestCategory==='Non Projek'&&data.nonProjectUnit)entries.push(['Satuan',data.nonProjectUnit]);
  if (data.requestCategory === 'Projek') entries.splice(5,0,
   ['Tanggal pekerjaan',workDateText(data,'projectWork')],['QTY/Jumlah',data.projectWorkQuantity],['Satuan',data.projectWorkUnit],['Keterangan',(data.projectWorkNote || '').trim()]);
  if (data.requestType === 'Operasional') entries.splice(5,0,
@@ -467,7 +471,7 @@ document.getElementById('whatsappButton').addEventListener('click',async()=>{
 document.getElementById('status').textContent = '';
 document.getElementById('reviewButton').disabled = false;
 function configureMaster(entries){
- if(!Array.isArray(entries))return;
+ if(!Array.isArray(entries))return;masterWorks=entries.filter(e=>e.kind==='work');
  const projects=entries.filter(e=>e.kind==='project'&&e.active),container=form.querySelector('[name="projectType"]').closest('.types'),chosen=form.querySelector('[name="projectType"]:checked')?.value,template=container.querySelector('svg').cloneNode(true);
  container.replaceChildren();projects.forEach(e=>{const label=document.createElement('label');label.className='type';const input=document.createElement('input');input.type='radio';input.name='projectType';input.value=e.name;input.required=true;input.checked=e.name===chosen;const span=document.createElement('span');span.textContent=e.name;label.append(input,template.cloneNode(true),span);container.append(label);});
  function options(select,values){const old=select.value;select.replaceChildren();const placeholder=document.createElement('option');placeholder.value='';placeholder.textContent='Pilih '+(select.name==='projectWorkUnit'?'satuan':'jenis pekerjaan');select.append(placeholder);values.forEach(name=>{const option=document.createElement('option');option.value=name;option.textContent=name;select.append(option);});if(values.includes(old))select.value=old;}

@@ -91,3 +91,9 @@ Pilihan awal ditambah **Permit** dan **HC** (bilangan bulat). Nilai harga belum 
 Master kustom tersimpan pada tab **Portal_Master** di spreadsheet portal. Formulir pengajuan dan menu tarif mengambil pilihan aktif dari sumber yang sama. Pilihan nonaktif tidak tersedia untuk draft baru/perubahan draft, tetapi invoice tersimpan dan PDF lama tetap dapat dibaca. Muat ulang formulir yang telah terbuka setelah perubahan master. Tarif serta invoice lama tidak dihapus atau diubah otomatis ketika master berubah.
 
 Validasi tambahan: `node tests/master-data.browser.cjs` memeriksa penambahan/nonaktivasi master, tarif Permit/HC, dan formulir Pemohon dengan layanan tiruan.
+
+## Satuan pekerjaan Non Projek
+
+Di **Master → Satuan pekerjaan Non Projek**, Admin memilih Sales, Manage Service, atau Operasional, memilih satuan aktif, lalu **Simpan satuan pekerjaan**. Pilihan satuan di **Tarif** mengikuti pengaturan tersebut. Setelah mengganti satuan, tentukan harga satuan untuk setiap jenis proyek pada tab Tarif. Formulir Pemohon menampilkan satuan dari Master dan invoice baru menggunakan satuan yang sama.
+
+Jumlah Sales tetap diisi sebagai jumlah hasil penjualan (bilangan bulat). Manage Service dan Operasional menggunakan jumlah satu untuk periode/pengajuan terkait. Reimburst tetap mengikuti rincian pengeluaran. Invoice tersimpan mempertahankan satuan dan nilai sebelumnya; bila Admin menjalankan **Perbarui tarif / hasil rekon**, satuan/nilai terbaru memerlukan konfirmasi Pemohon kembali. Satuan yang masih dipakai pekerjaan Non Projek aktif harus diganti pada pekerjaan tersebut sebelum bisa dinonaktifkan.
