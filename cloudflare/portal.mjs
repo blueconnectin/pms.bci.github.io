@@ -68,7 +68,7 @@ export async function portalRoute(request,env,bridge){
   const actor=await readSession(request,env);if(!actor)return json({error:'Silakan masuk terlebih dahulu.'},401);
   if(route==='/api/me'){
    if(request.method!=='GET')return json({error:'Metode tidak didukung.'},405);
-   try{return json(await bridge('portal',{action:'me'},actor));}catch{return json({error:'Sesi tidak berlaku. Silakan masuk lagi.'},401,clearCookie());}
+   try{return json(await bridge('portal',{action:'me'},actor));}catch(error){if(/Sesi tidak berlaku|Silakan masuk kembali/.test(error.message||''))return json({error:'Sesi tidak berlaku. Silakan masuk lagi.'},401,clearCookie());return json({error:'Sesi belum dapat diperiksa. Silakan coba kembali.'},503);}
   }
   if(request.method!=='POST')return json({error:'Metode tidak didukung.'},405);
   if(request.headers.get('origin')!==url.origin)return json({error:'Asal permintaan ditolak.'},403);
