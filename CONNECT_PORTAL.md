@@ -81,3 +81,13 @@ Tes tambahan: `node tests/account-roles.browser.cjs` menguji menu Admin dan penc
 ## Pembatasan login gagal
 
 Pembatasan menghitung sandi yang salah, bukan login berhasil: maksimal 8 kegagalan untuk kombinasi akun dan IP, serta 60 kegagalan lintas akun pada IP yang sama, dalam jendela tetap 15 menit. Login berhasil mereset hitungan akun pada IP tersebut; hitungan kegagalan IP bersama tetap dipertahankan. Percobaan saat diblokir tidak memperpanjang masa tunggu. Respons HTTP 429 menyertakan sisa waktu tunggu dan header Retry-After. Counter versi baru terpisah dari counter lama yang ikut menghitung login berhasil; sandi, akun, dan sesi tidak diubah oleh perbaikan ini.
+
+## Master data jenis proyek, pekerjaan, dan satuan
+
+Admin membuka tab **Master** untuk menambah pilihan atau mengaktifkan/menonaktifkan pilihan yang sudah ada. Pilih kelompok **Jenis pekerjaan**, **Satuan**, atau **Jenis proyek**, isi nama, lalu **Tambah pilihan**. Pekerjaan baru menggunakan kategori **Projek**, dengan rincian tanggal, jumlah, satuan, dan keterangan. Satuan baru dapat memakai bilangan bulat atau pecahan; aturan ini tetap setelah dibuat agar invoice lama tidak berubah. Nama tetap sebagai identitas; untuk nama berbeda, tambahkan pilihan baru dan nonaktifkan yang lama.
+
+Pilihan awal ditambah **Permit** dan **HC** (bilangan bulat). Nilai harga belum ditetapkan: buka **Tarif**, pilih jenis proyek, pekerjaan **Permit**, satuan **HC**, isi harga satuan sesuai ketentuan perusahaan, lalu simpan. Total dihitung jumlah HC × harga satuan. Pekerjaan Non Projek tetap memakai alur khusus Sales, Manage Service, Reimburst, dan Operasional; satuan khususnya mengikuti jenis pengajuan.
+
+Master kustom tersimpan pada tab **Portal_Master** di spreadsheet portal. Formulir pengajuan dan menu tarif mengambil pilihan aktif dari sumber yang sama. Pilihan nonaktif tidak tersedia untuk draft baru/perubahan draft, tetapi invoice tersimpan dan PDF lama tetap dapat dibaca. Muat ulang formulir yang telah terbuka setelah perubahan master. Tarif serta invoice lama tidak dihapus atau diubah otomatis ketika master berubah.
+
+Validasi tambahan: `node tests/master-data.browser.cjs` memeriksa penambahan/nonaktivasi master, tarif Permit/HC, dan formulir Pemohon dengan layanan tiruan.

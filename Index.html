@@ -85,6 +85,7 @@ const ADMIN_WHATSAPP = '6288223062197';
 const form = document.getElementById('requestForm');
 const review = document.getElementById('reviewDialog');
 const evidenceInput = document.getElementById('evidenceFiles');
+let masterUnits = null;
 let portalMode = false, portalDraftId = '', portalExistingEvidence = false, portalDraftLoaded = false;
 let driveUploadsEnabled = true, evidenceReady = false, recordingEnabled = false;
 let submissionRecordId = '', lastSavedSnapshot = '', recordFinalized = false, uploadedFolderMetadata = '';
@@ -112,7 +113,7 @@ function syncRequestCategory(resetChoice) {
  const nonProject = category === 'Non Projek', project = category === 'Projek';
  document.getElementById('nonProjectRequests').hidden = !nonProject;
  document.getElementById('projectRequests').hidden = !project;
- form.querySelectorAll('[name="requestType"]').forEach(input => {input.disabled = !nonProject;input.required = nonProject;if (resetChoice) input.checked = false;});
+ form.querySelectorAll('[name="requestType"]').forEach(input => {input.disabled = !nonProject || input.dataset.inactive==='true';input.required = nonProject && input.dataset.inactive!=='true';if (resetChoice) input.checked = false;});
  form.elements.projectRequestType.disabled = !project;
  form.elements.projectRequestType.required = project;
  if (resetChoice) form.elements.projectRequestType.value = '';
@@ -203,7 +204,7 @@ function validateWorkDetails() {
   const quantity = form.elements.projectWorkQuantity, value = Number(quantity.value), unit = form.elements.projectWorkUnit.value;
   let message = '';
   if (quantity.value && (!Number.isFinite(value) || value <= 0 || value > Number.MAX_SAFE_INTEGER)) message = 'QTY/Jumlah harus lebih dari nol dan tidak melebihi batas angka yang didukung.';
-  else if (quantity.value && (unit === 'Pcs' || unit === 'Buah') && !Number.isSafeInteger(value)) message = 'Jumlah untuk Pcs atau Buah harus bilangan bulat.';
+  else if (quantity.value && (masterUnits ? !masterUnits.find(e=>e.name===unit)?.decimal : unit!=='Meter') && !Number.isSafeInteger(value)) message = 'Jumlah untuk satuan ini harus bilangan bulat.';
   quantity.setCustomValidity(message);
  }
 }
@@ -465,8 +466,18 @@ document.getElementById('whatsappButton').addEventListener('click',async()=>{
 });
 document.getElementById('status').textContent = '';
 document.getElementById('reviewButton').disabled = false;
+function configureMaster(entries){
+ if(!Array.isArray(entries))return;
+ const projects=entries.filter(e=>e.kind==='project'&&e.active),container=form.querySelector('[name="projectType"]').closest('.types'),chosen=form.querySelector('[name="projectType"]:checked')?.value,template=container.querySelector('svg').cloneNode(true);
+ container.replaceChildren();projects.forEach(e=>{const label=document.createElement('label');label.className='type';const input=document.createElement('input');input.type='radio';input.name='projectType';input.value=e.name;input.required=true;input.checked=e.name===chosen;const span=document.createElement('span');span.textContent=e.name;label.append(input,template.cloneNode(true),span);container.append(label);});
+ function options(select,values){const old=select.value;select.replaceChildren();const placeholder=document.createElement('option');placeholder.value='';placeholder.textContent='Pilih '+(select.name==='projectWorkUnit'?'satuan':'jenis pekerjaan');select.append(placeholder);values.forEach(name=>{const option=document.createElement('option');option.value=name;option.textContent=name;select.append(option);});if(values.includes(old))select.value=old;}
+ options(form.elements.projectRequestType,entries.filter(e=>e.kind==='work'&&e.category==='Projek'&&e.active).map(e=>e.name));
+ masterUnits=entries.filter(e=>e.kind==='unit'&&e.projectUnit&&e.active);options(form.elements.projectWorkUnit,masterUnits.map(e=>e.name));
+ form.querySelectorAll('[name="requestType"]').forEach(input=>{const available=entries.some(e=>e.kind==='work'&&e.name===input.value&&e.active);input.dataset.inactive=String(!available);input.closest('label').hidden=!available;if(!available)input.checked=false;});syncRequestCategory(false);
+}
 function configureEvidence(config,reason) {
  if (config && config.portalAuthRequired && !config.portalEnabled) {form.hidden=true;document.getElementById('applicationRedirect').hidden=false;return;}
+ if(config&&config.masterData)configureMaster(config.masterData);
  portalMode = !!(config && config.portalEnabled);
  if (portalMode && config.profile) {
   const p=config.profile;

@@ -94,3 +94,5 @@ Nomor file mengikuti urutan lampiran yang dipilih: `Lampiran 01` sampai `Lampira
 [Petunjuk portal login manual](CONNECT_PORTAL.md) menjelaskan aktivasi akun email/password, profil rekening tersimpan, tarif admin, review/revisi/persetujuan, dan unduh PDF final. Mode baru masih dinonaktifkan sampai `AUTH_SECRET`, password awal admin, dan `PORTAL_ENABLED` dikonfigurasi. Tidak diperlukan Google OAuth untuk login manual ini. Data formulir anonim yang sudah ada tetap dipertahankan dan tidak otomatis dihubungkan ke akun pemohon baru.
 
 Portal mendukung role **Admin, Finance, dan Pemohon**. Pemohon dapat mendaftar mandiri; Admin membuat dan mengelola akun ketiga role. Finance mencatat pembayaran invoice disetujui menjadi **Paid**, lengkap dengan tanggal/referensi pembayaran dan riwayat. Lihat [panduan portal](CONNECT_PORTAL.md) untuk hak akses dan alurnya.
+
+Admin dapat mengelola jenis proyek, pekerjaan Projek, dan satuan melalui tab **Master**. Pilihan **Permit** dan **HC** sudah tersedia; tetapkan harga per jenis proyek pada tab **Tarif** sebelum digunakan untuk pengajuan bernilai otomatis.

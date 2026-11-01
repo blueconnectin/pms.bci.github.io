@@ -195,7 +195,7 @@ function doPost(event) {
     if (payload.action === 'config') {
       var config = getEvidenceConfiguration();
       config.portalAuthRequired = PropertiesService.getScriptProperties().getProperty('PORTAL_AUTH_REQUIRED') === 'true';
-      if (actor) {config.portalEnabled=true;config.profile=actor.profile;config.recordingEnabled=false;}
+      if (actor) {config.portalEnabled=true;config.profile=actor.profile;config.recordingEnabled=false;config.masterData=portalMaster_();}
       response = {ok:true,data:config};
     }
     else if (payload.action === 'upload') response = {ok:true,data:uploadEvidence_(payload.input)};
@@ -247,8 +247,10 @@ function recordRange_(start,end) {
 function normalizeRecord_(data) {
   if (!data || typeof data !== 'object') throw new Error('Data pengajuan tidak valid.');
   var result = {applicant:recordText_(data.applicant,'Nama pemohon',120),requestDate:recordDate_(data.requestDate),projectType:data.projectType,category:data.requestCategory,type:data.requestType,bank:recordText_(data.bank,'Nama bank',80),account:recordText_(data.accountNumber,'Nomor rekening',40),owner:recordText_(data.accountOwner,'Pemilik rekening',120),details:{}};
-  if (['FTTH','FWA'].indexOf(result.projectType) < 0 || !/^\d+$/.test(result.account)) throw new Error('Jenis proyek atau nomor rekening tidak valid.');
+  var master=typeof portalMaster_==='function'?portalMaster_():null;
+  if ((master?master.filter(function(e){return e.kind==='project';}).map(function(e){return e.name;}):['FTTH','FWA']).indexOf(result.projectType) < 0 || !/^\d+$/.test(result.account)) throw new Error('Jenis proyek atau nomor rekening tidak valid.');
   var projectTypes = ['Instalasi ODC','Instalasi ODP','Instalasi Closure','Join Core','Instalasi OTB','Penarikan Kabel Feeder','Penarikan Kabel Precon','Pemasangan Tiang','Pemasangan Aksesoris KU','Pemasangan X Frame 40 X 40','Pemasangan X Frame 80 X 80'];
+  if(master)projectTypes=master.filter(function(e){return e.kind==='work'&&e.category==='Projek';}).map(function(e){return e.name;});
   if (result.category === 'Projek') {if (projectTypes.indexOf(result.type) < 0) throw new Error('Jenis pekerjaan projek tidak valid.');}
   else if (result.category === 'Non Projek') {if (['Sales','Manage Service','Reimburst','Operasional'].indexOf(result.type) < 0) throw new Error('Jenis pengajuan Non Projek tidak valid.');}
   else throw new Error('Kategori pengajuan tidak valid.');
@@ -272,7 +274,8 @@ function normalizeRecord_(data) {
     result.details.keterangan = recordText_(data[prefix+'Note'],'Keterangan',1000);
     if (result.category === 'Projek') {
       var qty = Number(data.projectWorkQuantity), unit = data.projectWorkUnit;
-      if (!isFinite(qty) || qty <= 0 || qty > Number.MAX_SAFE_INTEGER || ['Pcs','Meter','Buah'].indexOf(unit) < 0 || (unit !== 'Meter' && !Number.isSafeInteger(qty))) throw new Error('QTY atau satuan tidak valid.');
+      var unitEntry=master?master.find(function(e){return e.kind==='unit'&&e.projectUnit&&e.name===unit;}):null;
+      if (!isFinite(qty) || qty <= 0 || qty > Number.MAX_SAFE_INTEGER || (master?!unitEntry:['Pcs','Meter','Buah'].indexOf(unit) < 0) || (!(master?unitEntry&&unitEntry.decimal:unit==='Meter') && !Number.isSafeInteger(qty))) throw new Error('QTY atau satuan tidak valid.');
       result.details.jumlah = qty;result.details.satuan = unit;
     }
   }
