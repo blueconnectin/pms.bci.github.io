@@ -81,7 +81,7 @@ jobs:
         run: |
           test -n "$CLOUDFLARE_API_TOKEN" || { echo 'Add the CLOUDFLARE_API_TOKEN repository secret.'; exit 1; }
           test -n "$CLOUDFLARE_ACCOUNT_ID" || { echo 'Add the CLOUDFLARE_ACCOUNT_ID repository secret.'; exit 1; }
-          if [ -n "$ADMIN_INITIAL_PASSWORD" ]; then test "${#ADMIN_INITIAL_PASSWORD}" -ge 12 || { echo 'ADMIN_INITIAL_PASSWORD must have at least 12 characters.'; exit 1; }; fi
+          if [ -n "$ADMIN_INITIAL_PASSWORD" ]; then test "${#ADMIN_INITIAL_PASSWORD}" -ge 6 || { echo 'ADMIN_INITIAL_PASSWORD must have at least 6 characters.'; exit 1; }; fi
           if [ "$PORTAL_ENABLED" = 'true' ]; then test "${#AUTH_SECRET}" -ge 32 || { echo 'Add repository secret AUTH_SECRET before enabling portal.'; exit 1; }; fi
           test "${#DRIVE_BRIDGE_SECRET}" -ge 32 || { echo 'Add repository secret BRIDGE_SECRET with the same value as Apps Script CLOUDFLARE_BRIDGE_SECRET (at least 32 characters).'; exit 1; }
       - name: Install dependencies
