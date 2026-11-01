@@ -188,6 +188,7 @@ function doPost(event) {
     if (payload.actor) actor = portalActor_(payload.actor);
     else if (payload.action !== 'config' && PropertiesService.getScriptProperties().getProperty('PORTAL_AUTH_REQUIRED') === 'true') throw new Error('Silakan masuk melalui portal.');
     if (actor && payload.action !== 'config') {
+      if (portalRole_(actor) !== 'PEMOHON') throw new Error('Hanya Pemohon yang dapat mengunggah bukti pengajuan.');
       if (!portalComplete_(actor.profile)) throw new Error('Lengkapi Profil Saya terlebih dahulu.');
       if (payload.input.metadata) payload.input.metadata.applicant = actor.profile.name;
     }

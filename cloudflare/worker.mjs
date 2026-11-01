@@ -40,7 +40,7 @@ export async function handle(request,env,fetchUpstream=fetch) {
   }
   if(authEnabled(env)&&route==='/request-form') {
     const actor=await authenticatedActor(request,env);if(!actor)return json({error:'Silakan masuk.'},401);
-    try{const me=await bridge('portal',{action:'me'},actor);if(!me.profile)return json({error:'Lengkapi profil terlebih dahulu.'},403);}catch{return json({error:'Sesi tidak berlaku.'},401);}
+    try{const me=await bridge('portal',{action:'me'},actor);if(me.role!=='PEMOHON')return json({error:'Hanya Pemohon yang dapat membuat invoice.'},403);if(!me.profile)return json({error:'Lengkapi profil terlebih dahulu.'},403);}catch{return json({error:'Sesi tidak berlaku.'},401);}
     const response=await env.ASSETS.fetch(new Request(new URL('/index.html',url),request));const headers=new Headers(response.headers);
     headers.set('X-Frame-Options','SAMEORIGIN');headers.set('Content-Security-Policy',"default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self'; frame-ancestors 'self'; form-action 'none'; object-src 'none'; base-uri 'none'");headers.set('Cache-Control','no-store');return new Response(response.body,{status:response.status,headers});
   }

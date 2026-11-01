@@ -38,7 +38,7 @@ Setelah akun portal pertama dibuat, backend menutup endpoint mutasi Google Apps 
 5. Revisi menggunakan formulir yang sama, dengan data dan bukti sebelumnya dipakai kembali. Koreksi diajukan ulang dengan riwayat tetap tersimpan.
 6. Jika nilai belum tersedia atau jumlah Sales perlu direkonsiliasi, admin mengatur tarif lalu menggunakan Perbarui tarif/hasil rekon dengan catatan. Status menjadi CONFIRMATION; pemohon harus mengonfirmasi nilai baru sebelum admin dapat menyetujui.
 7. Persetujuan menghasilkan nomor invoice unik `INV/BCI/YYYYMM/NNNNNN`, snapshot final dan file PDF private di folder Invoice Disetujui. Invoice disetujui tidak dapat diedit atau dihitung ulang. Bila penerbitan gagal sebelum catatan final tersimpan, nomor dapat berlubang; nomor yang sudah diterbitkan tidak dipakai ulang.
-8. Pemohon yang memiliki invoice tersebut dan admin dapat mengunduh PDF melalui API yang memeriksa sesi dan status persetujuan. Pengguna lain tidak dapat mengunduhnya. File tidak dibagikan publik oleh aplikasi.
+8. Pemohon yang memiliki invoice tersebut, Admin, dan Finance dapat mengunduh PDF melalui API yang memeriksa sesi dan status persetujuan. Pengguna lain tidak dapat mengunduhnya. File tidak dibagikan publik oleh aplikasi.
 
 Data Portal_Invoice adalah sumber proses baru; catatan anonim lama di tab Pengajuan tidak otomatis diklaim sebagai milik akun tertentu. Riwayat keputusan disimpan bersama data invoice. Tab tarif, profil, dan invoice memakai JSON per baris dengan batas ukuran sel; jangan mengedit struktur kolom secara manual.
 
@@ -52,7 +52,7 @@ Admin mengisi daftar tarif berdasarkan FTTH/FWA, jenis pekerjaan, dan satuan:
 - Projek: QTY pekerjaan, satuan Pcs, Meter, atau Buah sesuai pilihan pemohon.
 - Reimburst: nominal setiap objek pengeluaran dari pemohon, bukan daftar tarif.
 
-Harga dalam Rupiah bulat positif, total setiap baris dibulatkan ke Rupiah terdekat. Draft tanpa tarif dapat diajukan untuk dilengkapi admin; persetujuan ditolak sampai tarif lengkap dan nilainya dikonfirmasi pemohon. Perubahan tarif tidak memperbarui invoice disetujui. PPN/pajak, potongan, jatuh tempo, pembatalan invoice disetujui, pencatatan lunas, dan integrasi pembayaran belum diimplementasikan. PDF ini bukan implementasi faktur pajak.
+Harga dalam Rupiah bulat positif, total setiap baris dibulatkan ke Rupiah terdekat. Draft tanpa tarif dapat diajukan untuk dilengkapi admin; persetujuan ditolak sampai tarif lengkap dan nilainya dikonfirmasi pemohon. Perubahan tarif tidak memperbarui invoice disetujui. PPN/pajak, potongan, jatuh tempo, pembatalan invoice disetujui dan integrasi transfer bank otomatis belum diimplementasikan. PDF ini bukan implementasi faktur pajak.
 
 ## Pengujian sebelum digunakan
 
@@ -65,3 +65,15 @@ npx wrangler deploy --dry-run
 ```
 
 Tes lokal memakai layanan Google/Drive tiruan dan memeriksa autentikasi, cookie, akses lintas akun, penetapan tarif, rekonsiliasi, revisi, penguncian persetujuan, dan pembatasan PDF. Uji nyata setelah aktivasi dengan akun admin dan dua akun pemohon: pastikan profil/rekening otomatis, pemohon tidak melihat invoice pengguna lain, admin memberi revisi/persetujuan, perubahan tarif meminta konfirmasi, dan PDF final benar-benar dapat diunduh. Jangan memakai invoice uji sebagai tagihan nyata.
+
+## Role dan pengelolaan akun
+
+- **Admin** mengelola semua akun melalui **Kelola akun**: membuat Pemohon/Finance/Admin, mengubah nama dan role, menonaktifkan/mengaktifkan akun, serta mereset password. Email akun tetap sebagai identitas login. Akun dinonaktifkan untuk mencabut akses tanpa menghapus riwayat invoice.
+- **Pemohon** dapat mendaftar mandiri, mengelola profil/rekening, membuat dan mengajukan invoice sendiri, serta melihat status pembayaran. Pendaftaran mandiri selalu menghasilkan Pemohon, walaupun request browser menyertakan role lain.
+- **Finance** dibuat oleh Admin, melihat invoice yang sudah diajukan, mengunduh PDF final, dan mencatat pembayaran invoice yang telah disetujui. Finance tidak mengelola akun, tarif, atau persetujuan.
+
+Role disimpan pada akun dan diperiksa ulang di Apps Script pada setiap aksi. Akun lama tanpa field role tetap dikenali: email admin awal sebagai Admin, akun lainnya sebagai Pemohon. Perubahan akun dan reset password membatalkan sesi lama; pengguna harus masuk kembali. Minimal satu Admin aktif harus dipertahankan.
+
+Pada rincian invoice **Disetujui**, Finance mengisi tanggal dan referensi pembayaran, lalu memilih **Tandai Paid** setelah transfer dilakukan. Server menyimpan nominal sesuai invoice yang disetujui, identitas Finance, waktu pencatatan, dan riwayat; status menjadi **PAID**. Invoice Paid tetap dapat dilihat pemilik, Admin, dan Finance; PDF final tetap dapat diunduh. Pembayaran hanya dapat dicatat sekali dan tidak mengubah nominal/PDF yang disetujui. Fitur ini mencatat pembayaran yang telah dilakukan di luar aplikasi; tidak melakukan transfer bank.
+
+Tes tambahan: `node tests/account-roles.browser.cjs` menguji menu Admin dan pencatatan Paid Finance dengan API tiruan.

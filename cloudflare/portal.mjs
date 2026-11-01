@@ -47,6 +47,20 @@ export async function portalRoute(request,env,bridge){
    return json(await bridge('portal',{action:'me'},actor),200,cookie);
   }catch(error){return json({error:error.message || 'Login belum berhasil.'},400);}
  }
+ if(route==='/api/accounts'){
+  const actor=await readSession(request,env);if(!actor)return json({error:'Silakan masuk terlebih dahulu.'},401);
+  try{
+   const me=await bridge('portal',{action:'me'},actor);if(me.role!=='ADMIN')return json({error:'Hanya admin yang dapat mengelola akun.'},403);
+   if(request.method==='GET')return json(await bridge('portal',{action:'accounts'},actor));
+   if(request.method!=='POST')return json({error:'Gunakan POST.'},405);
+   if(request.headers.get('origin')!==url.origin)return json({error:'Asal permintaan ditolak.'},403);
+   const input=await smallJson(request,8192),email=normalizeEmail(input.email);
+   if(input.action==='update')return json(await bridge('portal',{action:'saveAccount',email,name:input.name,role:input.role,disabled:input.disabled},actor));
+   if(input.action!=='create'&&input.action!=='password')return json({error:'Aksi akun tidak dikenal.'},400);
+   const credentials=await hashPassword(input.password,env.AUTH_SECRET);
+   return json(await bridge('portalAuth',{action:input.action==='create'?'createAccount':'resetPassword',actor,email,name:input.name,role:input.role,...credentials}),input.action==='create'?201:200);
+  }catch(error){return json({error:error.message||'Pengelolaan akun gagal.'},400);}
+ }
  if(route==='/api/me'||route==='/api/portal'){
   const actor=await readSession(request,env);if(!actor)return json({error:'Silakan masuk terlebih dahulu.'},401);
   if(route==='/api/me'){
