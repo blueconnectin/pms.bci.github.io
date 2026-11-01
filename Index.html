@@ -51,7 +51,7 @@ main{margin-top:24px}
 <div id="projectRequests" class="full" hidden><label for="projectRequestType">Jenis pekerjaan projek<span class="required" aria-hidden="true">*</span></label><select id="projectRequestType" class="project-request-select" name="projectRequestType" disabled><option value="">Pilih jenis pekerjaan</option><option value="Instalasi ODC">Instalasi ODC</option><option value="Instalasi ODP">Instalasi ODP</option><option value="Instalasi Closure">Instalasi Closure</option><option value="Join Core">Join Core</option><option value="Instalasi OTB">Instalasi OTB</option><option value="Penarikan Kabel Feeder">Penarikan Kabel Feeder</option><option value="Penarikan Kabel Precon">Penarikan Kabel Precon</option><option value="Pemasangan Tiang">Pemasangan Tiang</option><option value="Pemasangan Aksesoris KU">Pemasangan Aksesoris KU</option><option value="Pemasangan X Frame 40 X 40">Pemasangan X Frame 40 X 40</option><option value="Pemasangan X Frame 80 X 80">Pemasangan X Frame 80 X 80</option></select></div>
 
 </div>
-<p id="nonProjectUnitInfo" class="full" hidden>Satuan pengajuan: <strong id="nonProjectUnitName"></strong></p><section id="salesDetails" class="sales-details" aria-labelledby="salesDetailsTitle" hidden>
+<p id="nonProjectUnitInfo" class="full" hidden>Satuan pengajuan: <strong id="nonProjectUnitName"></strong><span id="operationalDayInfo" hidden></span></p><section id="salesDetails" class="sales-details" aria-labelledby="salesDetailsTitle" hidden>
 <h3 id="salesDetailsTitle">Detail pengajuan Sales</h3>
 <div class="grid"><div><label for="salesPeriodStart">Periode pengajuan — mulai<span class="required" aria-hidden="true">*</span></label><input id="salesPeriodStart" name="salesPeriodStart" type="date" disabled></div><div><label for="salesPeriodEnd">Periode pengajuan — selesai<span class="required" aria-hidden="true">*</span></label><input id="salesPeriodEnd" name="salesPeriodEnd" type="date" disabled></div><div class="full"><label for="salesCount">Jumlah sales<span class="required" aria-hidden="true">*</span></label><input id="salesCount" name="salesCount" type="number" min="1" step="1" inputmode="numeric" placeholder="Masukkan jumlah sales yang diajukan" aria-describedby="salesReconciliationNote" disabled></div></div>
 <p id="salesReconciliationNote" class="notice">Jumlah aktual akan dihitung berdasarkan hasil rekonsiliasi dengan admin proyek.</p>
@@ -192,6 +192,7 @@ function syncWorkDetails() {
  });
 }
 function validateWorkDetails() {
+ updateOperationalDays();
  [['projectWork',isProjectWork()],['operationalWork',isOperationalWork()]].forEach(([prefix,active]) => {
   if (!active) return;
   const start = form.elements[prefix + 'DateStart'], end = form.elements[prefix + 'DateEnd'], note = form.elements[prefix + 'Note'];
@@ -212,7 +213,10 @@ function workDateText(data,prefix) {
  const first = displayDate(data[prefix + 'DateStart']);
  return data[prefix + 'DateMode'] === 'range' ? first + ' — ' + displayDate(data[prefix + 'DateEnd']) : first;
 }
+function operationalDayCount(data){const start=Date.parse(data.operationalWorkDateStart),end=data.operationalWorkDateMode==='range'?Date.parse(data.operationalWorkDateEnd):start;return Number.isFinite(start)&&Number.isFinite(end)&&end>=start?Math.round((end-start)/86400000)+1:0;}
+function updateOperationalDays(){const work=masterWorks.find(e=>e.name===selectedRequestType()),element=document.getElementById('operationalDayInfo');const active=selectedRequestType()==='Operasional'&&work?.unit==='Hari';element.hidden=!active;if(active){const days=operationalDayCount({operationalWorkDateMode:form.elements.operationalWorkDateMode.value,operationalWorkDateStart:form.elements.operationalWorkDateStart.value,operationalWorkDateEnd:form.elements.operationalWorkDateEnd.value});element.textContent=days?' · Jumlah: '+days+' hari':' · Jumlah hari dihitung dari tanggal pekerjaan';}}
 function syncRequestDetails() {
+ updateOperationalDays();
  if(isOperationalWork())document.getElementById('operationalWorkTitle').textContent='Detail pekerjaan '+selectedRequestType();
  const selectedWork=masterWorks.find(e=>e.name===selectedRequestType());const unit=selectedWork?.category==='Non Projek'?selectedWork.unit:'';
  document.getElementById('nonProjectUnitInfo').hidden=!unit;document.getElementById('nonProjectUnitName').textContent=unit||'';
@@ -254,7 +258,7 @@ function submissionEntries(data) {
   detail.push(['Total reimburst',rupiah(items.reduce((total,item) => total + item.amount,0))]);
   entries.splice(5,0,...detail);
  }
- if(data.requestCategory==='Non Projek'&&data.nonProjectUnit)entries.push(['Satuan',data.nonProjectUnit]);
+ if(data.requestCategory==='Non Projek'&&data.nonProjectUnit)entries.push(['Satuan',data.nonProjectUnit]);if(data.requestType==='Operasional'&&data.nonProjectUnit==='Hari')entries.push(['Jumlah hari',String(operationalDayCount(data))]);
  if (data.requestCategory === 'Projek') entries.splice(5,0,
   ['Tanggal pekerjaan',workDateText(data,'projectWork')],['QTY/Jumlah',data.projectWorkQuantity],['Satuan',data.projectWorkUnit],['Keterangan',(data.projectWorkNote || '').trim()]);
  if (data.requestCategory==='Non Projek'&&!['Sales','Manage Service','Reimburst'].includes(data.requestType)) entries.splice(5,0,

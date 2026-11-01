@@ -69,10 +69,17 @@ function portalMasterDefaults_(){
  var result=[];
  ['FTTH','FWA'].forEach(function(name){result.push({kind:'project',name:name,active:true});});
  ['Instalasi ODC','Instalasi ODP','Instalasi Closure','Join Core','Instalasi OTB','Penarikan Kabel Feeder','Penarikan Kabel Precon','Pemasangan Tiang','Pemasangan Aksesoris KU','Pemasangan X Frame 40 X 40','Pemasangan X Frame 80 X 80','Permit'].forEach(function(name){result.push({kind:'work',name:name,category:'Projek',active:true});});
- ['Sales','Manage Service','Reimburst','Operasional'].forEach(function(name){result.push({kind:'work',name:name,category:'Non Projek',unit:({Sales:'Sales','Manage Service':'Periode',Reimburst:'Pengeluaran',Operasional:'Pengajuan'})[name],active:true});});
- ['Pcs','Meter','Buah','HC','Sales','Periode','Pengajuan','Pengeluaran'].forEach(function(name){result.push({kind:'unit',name:name,decimal:name==='Meter',projectUnit:['Pcs','Meter','Buah','HC'].indexOf(name)>=0,active:true});});return result;
+ ['Sales','Manage Service','Reimburst','Operasional'].forEach(function(name){result.push({kind:'work',name:name,category:'Non Projek',unit:({Sales:'HC','Manage Service':'Periode',Reimburst:'Pengeluaran',Operasional:'Hari'})[name],active:true});});
+ ['Pcs','Meter','Buah','HC','Hari','Sales','Periode','Pengajuan','Pengeluaran'].forEach(function(name){result.push({kind:'unit',name:name,decimal:name==='Meter',projectUnit:['Pcs','Meter','Buah','HC','Hari'].indexOf(name)>=0,active:true});});return result;
 }
-function portalMaster_(){var entries=portalMasterDefaults_();if(PropertiesService.getScriptProperties().getProperty('SUBMISSION_SPREADSHEET_ID'))portalRows_('Master').forEach(function(row){var index=entries.findIndex(function(entry){return entry.kind===row.value.kind&&entry.name===row.value.name;});if(index>=0)entries[index]=Object.assign({},entries[index],row.value);else entries.push(row.value);});return entries;}
+function portalMaster_(){var entries=portalMasterDefaults_();if(PropertiesService.getScriptProperties().getProperty('SUBMISSION_SPREADSHEET_ID'))portalRows_('Master').forEach(function(row){var index=entries.findIndex(function(entry){return entry.kind===row.value.kind&&entry.name===row.value.name;});if(index>=0)entries[index]=Object.assign({},entries[index],row.value);else entries.push(row.value);});
+ var props=PropertiesService.getScriptProperties();
+ if(props.getProperty('SUBMISSION_SPREADSHEET_ID')&&props.getProperty('PORTAL_WORK_UNITS_V2')!=='true'){
+  ['HC','Hari'].forEach(function(name){var unit=entries.find(function(e){return e.kind==='unit'&&e.name===name;});if(!unit.active){unit.active=true;portalPut_('Master',JSON.stringify(['unit',name]),unit);}});
+  [{name:'Sales',unit:'HC'},{name:'Operasional',unit:'Hari'}].forEach(function(setting){var work=entries.find(function(e){return e.kind==='work'&&e.name===setting.name;});work.unit=setting.unit;portalPut_('Master',JSON.stringify(['work',work.name]),work);});
+  props.setProperty('PORTAL_WORK_UNITS_V2','true');
+ }
+ return entries;}
 function portalMasterNames_(kind,active){return portalMaster_().filter(function(entry){return entry.kind===kind&&(!active||entry.active);}).map(function(entry){return entry.name;});}
 function portalSaveMaster_(input,account){
  if(!portalAdmin_(account))throw Error('Hanya Admin yang dapat mengelola master data.');var m=input.entry||{},kind=m.kind,name=recordText_(m.name,'Nama',80),entries=portalMaster_();
@@ -93,12 +100,14 @@ function portalSaveMaster_(input,account){
  entry.updatedAt=new Date().toISOString();entry.updatedBy=account.email;portalPut_('Master',JSON.stringify([kind,name]),entry);return entry;
 }
 function portalValidateMaster_(data){var entries=portalMaster_();function active(kind,name){return entries.find(function(e){return e.kind===kind&&e.name===name&&e.active;});}var work=active('work',data.requestType);if(!active('project',data.projectType)||!work||work.category!==data.requestCategory)throw Error('Jenis proyek atau pekerjaan sudah tidak aktif. Pilih ulang dari master data.');if(data.requestCategory==='Non Projek'&&!active('unit',work.unit))throw Error('Satuan pekerjaan Non Projek tidak aktif. Hubungi Admin.');if(data.requestCategory==='Projek'){var unit=active('unit',data.projectWorkUnit);if(!unit||!unit.projectUnit)throw Error('Satuan tidak aktif. Pilih ulang satuan pekerjaan.');}}
+function portalOperationalDays_(data){var start=recordDate_(data.operationalWorkDateStart),end=data.operationalWorkDateMode==='range'?recordDate_(data.operationalWorkDateEnd):start;if(end<start)throw Error('Tanggal selesai tidak boleh sebelum tanggal mulai.');return Math.round((Date.parse(end)-Date.parse(start))/86400000)+1;}
 function portalItems_(data){
  var tariffs=portalRows_('Tarif').map(function(r){return r.value;});
  function item(description,qty,unit,amount){var rate=amount;if(rate==null){var found=tariffs.find(function(t){return t.projectType===data.projectType&&t.type===data.requestType&&t.unit===unit;});rate=found?found.price:null;}var total=rate==null?null:Math.round(qty*rate);if(total!==null&&(!Number.isSafeInteger(total)||total<=0))throw Error('Nilai invoice di luar batas.');return {description:description,qty:qty,unit:unit,price:rate,amount:total};}
  if(data.requestType==='Reimburst')return data.reimbursementItems.map(function(r){return item(r.object,1,'Pengeluaran',Number(r.amount));});
  var qty=data.requestCategory==='Projek'?Number(data.projectWorkQuantity):(data.requestType==='Sales'?Number(data.salesCount):1);
  var unit=data.requestCategory==='Projek'?data.projectWorkUnit:(data.nonProjectUnit||({Sales:'Sales','Manage Service':'Periode',Operasional:'Pengajuan'})[data.requestType]);
+ if(data.requestType==='Operasional'&&unit==='Hari')qty=portalOperationalDays_(data);
  return [item(data.requestType,qty,unit,null)];
 }
 function portalPrice_(invoice){if(invoice.data.requestCategory==='Non Projek'){var work=portalMaster_().find(function(e){return e.kind==='work'&&e.name===invoice.data.requestType;});invoice.data.nonProjectUnit=work.unit;}invoice.items=portalItems_(invoice.data);invoice.priced=invoice.items.every(function(i){return i.price!==null;});invoice.total=invoice.priced?invoice.items.reduce(function(t,i){return t+i.amount;},0):null;if(invoice.total!==null&&!Number.isSafeInteger(invoice.total))throw Error('Total terlalu besar.');}
@@ -131,8 +140,8 @@ function portalDispatch_(action,input,actor){
    if(!admin)throw Error('Hanya admin proyek.');var t=input.tariff||{};
    var master=portalMaster_(),work=master.find(function(e){return e.kind==='work'&&e.name===t.type&&e.active;});
 
-   if(!work||(t.category!==undefined&&t.category!==work.category)||work.name==='Reimburst'||portalMasterNames_('project',true).indexOf(t.projectType)<0||!master.some(function(e){return e.kind==='unit'&&e.name===t.unit&&e.active&&(work.category==='Projek'?e.projectUnit:e.name===work.unit);})||!Number.isSafeInteger(Number(t.price))||Number(t.price)<=0)throw Error('Tarif tidak valid. Pilih proyek, pekerjaan, dan satuan aktif.');
-   t={projectType:t.projectType,category:work.category,type:recordText_(t.type,'Jenis pekerjaan',80),unit:t.unit,price:Number(t.price),updatedBy:account.email,updatedAt:new Date().toISOString()};portalPut_('Tarif',JSON.stringify([t.projectType,t.type,t.unit]),t);return t;
+   if(!work||(t.category!==undefined&&t.category!==work.category)||work.name==='Reimburst'||portalMasterNames_('project',true).indexOf(t.projectType)<0||!master.some(function(e){return e.kind==='unit'&&e.name===t.unit&&e.active&&(work.category!=='Projek'||e.projectUnit);})||!Number.isSafeInteger(Number(t.price))||Number(t.price)<=0)throw Error('Tarif tidak valid. Pilih proyek, pekerjaan, dan satuan aktif.');
+   t={projectType:t.projectType,category:work.category,type:recordText_(t.type,'Jenis pekerjaan',80),unit:t.unit,price:Number(t.price),updatedBy:account.email,updatedAt:new Date().toISOString()};portalPut_('Tarif',JSON.stringify([t.projectType,t.type,t.unit]),t);if(work.category==='Non Projek'&&work.unit!==t.unit)portalSaveMaster_({entry:{kind:'work',name:work.name,category:work.category,active:work.active,unit:t.unit}},account);return t;
   }
   if(action==='list')return portalRows_('Invoice').map(function(r){return r.value;}).filter(function(i){return admin||(portalFinance_(account)&&i.status!=='DRAFT')||i.owner===account.id;}).map(function(i){return {id:i.id,number:i.number||'',applicant:i.profile.name,type:i.data.requestType,status:i.status,total:i.total,updatedAt:i.updatedAt};}).sort(function(a,b){return b.updatedAt.localeCompare(a.updatedAt);});
   if(action==='draft'){
@@ -191,7 +200,7 @@ function portalDetailLines_(data) {
  else if(data.requestType==='Manage Service')lines.push(['Periode penagihan',period(d.periodePenagihan)]);
  else if(data.requestType==='Reimburst')d.rincian.forEach(function(item,i){lines.push(['Rincian '+(i+1),item.objek+' — Rp '+item.nominal.toLocaleString('id-ID')]);});
  else {lines.push(['Tanggal pekerjaan',period(d.tanggal)]);if(data.requestCategory==='Projek')lines.push(['QTY/Jumlah',String(d.jumlah)+' '+d.satuan]);lines.push(['Keterangan',d.keterangan]);}
- if(data.requestCategory==='Non Projek'&&data.nonProjectUnit)lines.push(['Satuan',data.nonProjectUnit]);
+ if(data.requestCategory==='Non Projek'&&data.nonProjectUnit)lines.push(['Satuan',data.nonProjectUnit]);if(data.requestType==='Operasional'&&data.nonProjectUnit==='Hari')lines.push(['Jumlah hari',String(portalOperationalDays_(data))]);
  return lines;
 }
 function portalEscape_(value){return String(value==null?'':value).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}

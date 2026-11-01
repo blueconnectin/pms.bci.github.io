@@ -98,6 +98,12 @@ Pengaturan pekerjaan menggunakan satu form **Master**. Pilih kelompok **Jenis pe
 
 Untuk mengganti satuan Sales, pilih **Master → Jenis pekerjaan → Non Projek**, klik **Ubah** pada baris Sales, pilih satuan, lalu **Simpan perubahan**. Tidak ada bidang pengaturan terpisah. Nama dan kategori pekerjaan yang sudah tersimpan dipertahankan agar invoice lama tetap dapat dibaca; tambahkan pekerjaan baru untuk kategori berbeda.
 
-Pada **Tarif**, pilih **Kategori pekerjaan** untuk memfilter jenis pekerjaannya. Kolom kategori juga ditampilkan pada daftar Master dan daftar tarif. Satuan tarif Non Projek mengikuti satuan pekerjaan yang dipilih dalam Master. Setelah mengganti satuan, isi harga satuannya untuk setiap jenis proyek yang digunakan. Sales tetap menggunakan jumlah penjualan (bilangan bulat); Manage Service dan Operasional menggunakan jumlah satu untuk periode/pengajuan terkait. Reimburst mengikuti rincian pengeluaran.
+Pada **Tarif**, pilih **Kategori pekerjaan** untuk memfilter jenis pekerjaannya. Kolom kategori juga ditampilkan pada daftar Master dan daftar tarif. Satuan tarif Non Projek menampilkan satuan aktif dari Master dan dapat dipilih langsung. Menyimpan tarif dengan satuan berbeda menyelaraskan satuan pekerjaan di Master. Setelah mengganti satuan, isi harga satuannya untuk setiap jenis proyek yang digunakan. Sales tetap menggunakan jumlah penjualan (bilangan bulat); Manage Service menggunakan jumlah satu untuk periode terkait. Operasional dengan satuan Hari menghitung jumlah hari secara otomatis, termasuk tanggal mulai dan akhir. Reimburst mengikuti rincian pengeluaran.
 
 Invoice lama mempertahankan satuan dan nilai sebelumnya. Aksi **Perbarui tarif / hasil rekon** memakai pengaturan terbaru dan meminta konfirmasi Pemohon kembali. Satuan yang dipakai pekerjaan Non Projek aktif harus diganti pada pekerjaan tersebut sebelum dinonaktifkan.
+
+## Sales HC dan Operasional Hari
+
+Satuan awal **Sales = HC** dan **Operasional = Hari** diterapkan satu kali pada Master, termasuk konfigurasi lama. Setelah itu Admin tetap dapat mengubahnya melalui Master atau saat menyimpan Tarif. Tarif lama dan invoice tersimpan tidak diubah otomatis. Isi harga per HC/per Hari pada tab Tarif sesuai kebijakan perusahaan.
+
+Operasional dengan satu tanggal menggunakan jumlah 1 Hari. Rentang 30 Oktober sampai 1 November menggunakan jumlah 3 Hari. Total = jumlah hari × harga per Hari. Jumlah hari ditampilkan pada formulir dan ringkasan serta dihitung ulang di server. Perubahan harga/satuan terhadap pengajuan tersimpan hanya berlaku melalui perhitungan ulang dan konfirmasi Pemohon.
