@@ -29,9 +29,19 @@ function portalAuth_(action,input){
  try {
   var props=PropertiesService.getScriptProperties();
   if(action==='lookup')return portalCredential_(input);
+  // Keep the old action during the Apps Script -> Worker rollout.
   if(action==='attempt'){
-   var key='portal-attempt-'+Utilities.base64EncodeWebSafe(Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256,String(input.email))),cache=CacheService.getScriptCache(),count=Number(cache.get(key)||0);
-   if(count>=(String(input.email).indexOf('ip:')===0?60:8))throw Error('Terlalu banyak percobaan. Coba kembali 15 menit lagi.');cache.put(key,String(count+1),900);return {allowed:true};
+   var legacyKey='portal-attempt-'+Utilities.base64EncodeWebSafe(Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256,String(input.email))),legacyCache=CacheService.getScriptCache(),legacyCount=Number(legacyCache.get(legacyKey)||0);
+   if(legacyCount>=(String(input.email).indexOf('ip:')===0?60:8))throw Error('Terlalu banyak percobaan. Coba kembali 15 menit lagi.');legacyCache.put(legacyKey,String(legacyCount+1),900);return {allowed:true};
+  }
+  if(action==='throttle'){
+   var cache=CacheService.getScriptCache(),keys=input.keys,event=input.event,now=Date.now(),windowMs=900000;
+   if(!Array.isArray(keys)||keys.length!==2||keys.some(function(key){return typeof key!=='string'||key.length>600;})||['check','failure','success'].indexOf(event)<0)throw Error('Data pembatasan login tidak valid.');
+   var entries=keys.map(function(value){var key='portal-login-v2-'+Utilities.base64EncodeWebSafe(Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256,value)),stored=JSON.parse(cache.get(key)||'null');return {key:key,state:stored&&stored.expiresAt>now?stored:{count:0,expiresAt:now+windowMs}};});
+   if(event==='success'){cache.remove(entries[1].key);return {allowed:true};}
+   if(event==='failure'){entries.forEach(function(entry){entry.state.count++;cache.put(entry.key,JSON.stringify(entry.state),Math.max(1,Math.ceil((entry.state.expiresAt-now)/1000)));});return {allowed:true};}
+   var retry=0;entries.forEach(function(entry,index){if(entry.state.count>=(index===0?60:8))retry=Math.max(retry,Math.ceil((entry.state.expiresAt-now)/1000));});
+   return {allowed:retry===0,retryAfter:retry};
   }
   if(action==='createAccount'||action==='resetPassword'){
    portalRequireAdmin_(input.actor);portalHashInput_(input);var email=portalAccountEmail_(input.email),target=portalGet_('Akun',email);

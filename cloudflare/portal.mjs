@@ -19,33 +19,36 @@ export async function portalRoute(request,env,bridge){
   if(route==='/api/auth/logout')return json({ok:true},200,clearCookie());
   if(Number(request.headers.get('content-length'))>8192)return json({error:'Data terlalu besar.'},413);
   let input;try{input=await smallJson(request,8192);}catch{return json({error:'Data login tidak valid.'},400);}
+  let throttleKeys;
+  const throttle=async event=>bridge('portalAuth',{action:'throttle',keys:throttleKeys,event});
+  const blocked=result=>{const response=json({error:'Terlalu banyak percobaan login gagal. Coba kembali dalam '+Math.ceil(result.retryAfter/60)+' menit.',retryAfter:result.retryAfter},429);response.headers.set('Retry-After',String(result.retryAfter));return response;};
   try {
+   const email=route==='/api/auth/password'?(await readSession(request,env))?.email:normalizeEmail(input.email);
+   if(!email)return json({error:'Silakan masuk.'},401);
+   const ip=request.headers.get('cf-connecting-ip')||'unknown';throttleKeys=['ip:'+ip,'account:'+ip+':'+email];
+   const limit=await throttle('check');if(!limit.allowed)return blocked(limit);
    if(route==='/api/auth/password') {
     const actor=await readSession(request,env);if(!actor)return json({error:'Silakan masuk.'},401);
     await bridge('portal',{action:'me'},actor);
-    await bridge('portalAuth',{action:'attempt',email:actor.email});
     const stored=await bridge('portalAuth',{action:'lookup',email:actor.email});
-    if(!await verifyPassword(input.currentPassword,stored,env.AUTH_SECRET))return json({error:'Password saat ini tidak sesuai.'},400);
+    if(!await verifyPassword(input.currentPassword,stored,env.AUTH_SECRET)){await throttle('failure');return json({error:'Password saat ini tidak sesuai.'},400);}
     const credentials=await hashPassword(input.newPassword,env.AUTH_SECRET);
     const account=await bridge('portalAuth',{action:'password',actor,...credentials});
-    return json({ok:true},200,await sessionCookie(account,env));
+    await throttle('success');return json({ok:true},200,await sessionCookie(account,env));
    }
-   const email=normalizeEmail(input.email);
-   await bridge('portalAuth',{action:'attempt',email:'ip:'+(request.headers.get('cf-connecting-ip')||'unknown')});
-   await bridge('portalAuth',{action:'attempt',email});
    if(route==='/api/auth/register'){
     if(email===ADMIN_EMAIL)return json({error:'Akun admin tidak dapat didaftarkan sebagai pemohon.'},403);
     const credentials=await hashPassword(input.password,env.AUTH_SECRET);
     const account=await bridge('portalAuth',{action:'register',email,name:input.name,...credentials});
-    return json(account,201,await sessionCookie(account,env));
+    await throttle('success');return json(account,201,await sessionCookie(account,env));
    }
    let account=await bridge('portalAuth',{action:'lookup',email});
    if(!account&&email===ADMIN_EMAIL&&await matchesInitial(input.password,env.ADMIN_INITIAL_PASSWORD,env.AUTH_SECRET)){
     account=await bridge('portalAuth',{action:'register',email,name:'Admin Proyek',...await hashPassword(input.password,env.AUTH_SECRET)});
-   } else if(!account||account.disabled||!await verifyPassword(input.password,account,env.AUTH_SECRET))return json({error:'Email atau password tidak sesuai.'},401);
+   } else if(!account||account.disabled||!await verifyPassword(input.password,account,env.AUTH_SECRET)){await throttle('failure');return json({error:'Email atau password tidak sesuai.'},401);}
    const cookie=await sessionCookie(account,env),actor=await readSession(new Request(request.url,{headers:{cookie:cookie.split(';')[0]}}),env);
-   return json(await bridge('portal',{action:'me'},actor),200,cookie);
-  }catch(error){return json({error:error.message || 'Login belum berhasil.'},400);}
+   const me=await bridge('portal',{action:'me'},actor);await throttle('success');return json(me,200,cookie);
+  }catch(error){if(throttleKeys&&route==='/api/auth/register')await throttle('failure').catch(()=>{});return json({error:error.message || 'Login belum berhasil.'},400);}
  }
  if(route==='/api/accounts'){
   const actor=await readSession(request,env);if(!actor)return json({error:'Silakan masuk terlebih dahulu.'},401);

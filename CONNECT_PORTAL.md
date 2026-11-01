@@ -77,3 +77,7 @@ Role disimpan pada akun dan diperiksa ulang di Apps Script pada setiap aksi. Aku
 Pada rincian invoice **Disetujui**, Finance mengisi tanggal dan referensi pembayaran, lalu memilih **Tandai Paid** setelah transfer dilakukan. Server menyimpan nominal sesuai invoice yang disetujui, identitas Finance, waktu pencatatan, dan riwayat; status menjadi **PAID**. Invoice Paid tetap dapat dilihat pemilik, Admin, dan Finance; PDF final tetap dapat diunduh. Pembayaran hanya dapat dicatat sekali dan tidak mengubah nominal/PDF yang disetujui. Fitur ini mencatat pembayaran yang telah dilakukan di luar aplikasi; tidak melakukan transfer bank.
 
 Tes tambahan: `node tests/account-roles.browser.cjs` menguji menu Admin dan pencatatan Paid Finance dengan API tiruan.
+
+## Pembatasan login gagal
+
+Pembatasan menghitung sandi yang salah, bukan login berhasil: maksimal 8 kegagalan untuk kombinasi akun dan IP, serta 60 kegagalan lintas akun pada IP yang sama, dalam jendela tetap 15 menit. Login berhasil mereset hitungan akun pada IP tersebut; hitungan kegagalan IP bersama tetap dipertahankan. Percobaan saat diblokir tidak memperpanjang masa tunggu. Respons HTTP 429 menyertakan sisa waktu tunggu dan header Retry-After. Counter versi baru terpisah dari counter lama yang ikut menghitung login berhasil; sandi, akun, dan sesi tidak diubah oleh perbaikan ini.
