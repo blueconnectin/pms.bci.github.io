@@ -81,7 +81,7 @@ function portalSaveMaster_(input,account){
  if(existing&&existing.name!==name)throw Error('Nama sudah tersedia. Gunakan nama yang terdaftar.');
  if(!existing&&entries.filter(function(entry){return entry.kind===kind;}).length>=100)throw Error('Maksimal 100 pilihan per kelompok.');
  var entry=existing?JSON.parse(JSON.stringify(existing)):{kind:kind,name:name};entry.active=m.active;
- if(!existing&&kind==='work')entry.category='Projek';
+ if(kind==='work'){var category=m.category||entry.category||'Projek';if(['Projek','Non Projek'].indexOf(category)<0)throw Error('Kategori pekerjaan tidak valid.');if(existing&&category!==existing.category)throw Error('Kategori pekerjaan tersimpan tidak dapat diganti. Tambahkan pekerjaan baru.');entry.category=category;}
  if(!existing&&kind==='unit'){if(typeof m.decimal!=='boolean')throw Error('Pilih aturan jumlah satuan.');entry.decimal=m.decimal;entry.projectUnit=true;}
  if(kind==='work'&&entry.category==='Non Projek'){
   if(m.unit===undefined)m.unit=entry.unit;
@@ -131,8 +131,8 @@ function portalDispatch_(action,input,actor){
    if(!admin)throw Error('Hanya admin proyek.');var t=input.tariff||{};
    var master=portalMaster_(),work=master.find(function(e){return e.kind==='work'&&e.name===t.type&&e.active;});
 
-   if(!work||work.name==='Reimburst'||portalMasterNames_('project',true).indexOf(t.projectType)<0||!master.some(function(e){return e.kind==='unit'&&e.name===t.unit&&e.active&&(work.category==='Projek'?e.projectUnit:e.name===work.unit);})||!Number.isSafeInteger(Number(t.price))||Number(t.price)<=0)throw Error('Tarif tidak valid. Pilih proyek, pekerjaan, dan satuan aktif.');
-   t={projectType:t.projectType,type:recordText_(t.type,'Jenis pekerjaan',80),unit:t.unit,price:Number(t.price),updatedBy:account.email,updatedAt:new Date().toISOString()};portalPut_('Tarif',JSON.stringify([t.projectType,t.type,t.unit]),t);return t;
+   if(!work||(t.category!==undefined&&t.category!==work.category)||work.name==='Reimburst'||portalMasterNames_('project',true).indexOf(t.projectType)<0||!master.some(function(e){return e.kind==='unit'&&e.name===t.unit&&e.active&&(work.category==='Projek'?e.projectUnit:e.name===work.unit);})||!Number.isSafeInteger(Number(t.price))||Number(t.price)<=0)throw Error('Tarif tidak valid. Pilih proyek, pekerjaan, dan satuan aktif.');
+   t={projectType:t.projectType,category:work.category,type:recordText_(t.type,'Jenis pekerjaan',80),unit:t.unit,price:Number(t.price),updatedBy:account.email,updatedAt:new Date().toISOString()};portalPut_('Tarif',JSON.stringify([t.projectType,t.type,t.unit]),t);return t;
   }
   if(action==='list')return portalRows_('Invoice').map(function(r){return r.value;}).filter(function(i){return admin||(portalFinance_(account)&&i.status!=='DRAFT')||i.owner===account.id;}).map(function(i){return {id:i.id,number:i.number||'',applicant:i.profile.name,type:i.data.requestType,status:i.status,total:i.total,updatedAt:i.updatedAt};}).sort(function(a,b){return b.updatedAt.localeCompare(a.updatedAt);});
   if(action==='draft'){

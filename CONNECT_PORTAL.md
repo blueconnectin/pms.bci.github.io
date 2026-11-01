@@ -84,7 +84,7 @@ Pembatasan menghitung sandi yang salah, bukan login berhasil: maksimal 8 kegagal
 
 ## Master data jenis proyek, pekerjaan, dan satuan
 
-Admin membuka tab **Master** untuk menambah pilihan atau mengaktifkan/menonaktifkan pilihan yang sudah ada. Pilih kelompok **Jenis pekerjaan**, **Satuan**, atau **Jenis proyek**, isi nama, lalu **Tambah pilihan**. Pekerjaan baru menggunakan kategori **Projek**, dengan rincian tanggal, jumlah, satuan, dan keterangan. Satuan baru dapat memakai bilangan bulat atau pecahan; aturan ini tetap setelah dibuat agar invoice lama tidak berubah. Nama tetap sebagai identitas; untuk nama berbeda, tambahkan pilihan baru dan nonaktifkan yang lama.
+Admin membuka tab **Master** untuk menambah pilihan atau mengaktifkan/menonaktifkan pilihan yang sudah ada. Pilih kelompok **Jenis pekerjaan**, **Satuan**, atau **Jenis proyek**, isi nama, lalu **Tambah pilihan**. Kategori pekerjaan dipilih pada form yang sama: **Projek** atau **Non Projek**. Pekerjaan Projek menggunakan rincian tanggal, jumlah, satuan, dan keterangan. Satuan baru dapat memakai bilangan bulat atau pecahan; aturan ini tetap setelah dibuat agar invoice lama tidak berubah. Nama tetap sebagai identitas; untuk nama berbeda, tambahkan pilihan baru dan nonaktifkan yang lama.
 
 Pilihan awal ditambah **Permit** dan **HC** (bilangan bulat). Nilai harga belum ditetapkan: buka **Tarif**, pilih jenis proyek, pekerjaan **Permit**, satuan **HC**, isi harga satuan sesuai ketentuan perusahaan, lalu simpan. Total dihitung jumlah HC × harga satuan. Pekerjaan Non Projek tetap memakai alur khusus Sales, Manage Service, Reimburst, dan Operasional; satuan khususnya mengikuti jenis pengajuan.
 
@@ -92,8 +92,12 @@ Master kustom tersimpan pada tab **Portal_Master** di spreadsheet portal. Formul
 
 Validasi tambahan: `node tests/master-data.browser.cjs` memeriksa penambahan/nonaktivasi master, tarif Permit/HC, dan formulir Pemohon dengan layanan tiruan.
 
-## Satuan pekerjaan Non Projek
+## Kategori pekerjaan pada Master dan Tarif
 
-Di **Master → Satuan pekerjaan Non Projek**, Admin memilih Sales, Manage Service, atau Operasional, memilih satuan aktif, lalu **Simpan satuan pekerjaan**. Pilihan satuan di **Tarif** mengikuti pengaturan tersebut. Setelah mengganti satuan, tentukan harga satuan untuk setiap jenis proyek pada tab Tarif. Formulir Pemohon menampilkan satuan dari Master dan invoice baru menggunakan satuan yang sama.
+Pengaturan pekerjaan menggunakan satu form **Master**. Pilih kelompok **Jenis pekerjaan**, pilih kategori **Projek / Non Projek**, lalu isi nama. Untuk Non Projek pilih satuan dari Master pada form yang sama. Pekerjaan Projek menggunakan tanggal, jumlah, satuan, dan keterangan; pekerjaan Non Projek tambahan menggunakan tanggal/keterangan dan jumlah satu. Alur khusus Sales, Manage Service, dan Reimburst tetap tersedia.
 
-Jumlah Sales tetap diisi sebagai jumlah hasil penjualan (bilangan bulat). Manage Service dan Operasional menggunakan jumlah satu untuk periode/pengajuan terkait. Reimburst tetap mengikuti rincian pengeluaran. Invoice tersimpan mempertahankan satuan dan nilai sebelumnya; bila Admin menjalankan **Perbarui tarif / hasil rekon**, satuan/nilai terbaru memerlukan konfirmasi Pemohon kembali. Satuan yang masih dipakai pekerjaan Non Projek aktif harus diganti pada pekerjaan tersebut sebelum bisa dinonaktifkan.
+Untuk mengganti satuan Sales, pilih **Master → Jenis pekerjaan → Non Projek**, klik **Ubah** pada baris Sales, pilih satuan, lalu **Simpan perubahan**. Tidak ada bidang pengaturan terpisah. Nama dan kategori pekerjaan yang sudah tersimpan dipertahankan agar invoice lama tetap dapat dibaca; tambahkan pekerjaan baru untuk kategori berbeda.
+
+Pada **Tarif**, pilih **Kategori pekerjaan** untuk memfilter jenis pekerjaannya. Kolom kategori juga ditampilkan pada daftar Master dan daftar tarif. Satuan tarif Non Projek mengikuti satuan pekerjaan yang dipilih dalam Master. Setelah mengganti satuan, isi harga satuannya untuk setiap jenis proyek yang digunakan. Sales tetap menggunakan jumlah penjualan (bilangan bulat); Manage Service dan Operasional menggunakan jumlah satu untuk periode/pengajuan terkait. Reimburst mengikuti rincian pengeluaran.
+
+Invoice lama mempertahankan satuan dan nilai sebelumnya. Aksi **Perbarui tarif / hasil rekon** memakai pengaturan terbaru dan meminta konfirmasi Pemohon kembali. Satuan yang dipakai pekerjaan Non Projek aktif harus diganti pada pekerjaan tersebut sebelum dinonaktifkan.

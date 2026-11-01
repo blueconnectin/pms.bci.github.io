@@ -252,7 +252,7 @@ function normalizeRecord_(data) {
   var projectTypes = ['Instalasi ODC','Instalasi ODP','Instalasi Closure','Join Core','Instalasi OTB','Penarikan Kabel Feeder','Penarikan Kabel Precon','Pemasangan Tiang','Pemasangan Aksesoris KU','Pemasangan X Frame 40 X 40','Pemasangan X Frame 80 X 80'];
   if(master)projectTypes=master.filter(function(e){return e.kind==='work'&&e.category==='Projek';}).map(function(e){return e.name;});
   if (result.category === 'Projek') {if (projectTypes.indexOf(result.type) < 0) throw new Error('Jenis pekerjaan projek tidak valid.');}
-  else if (result.category === 'Non Projek') {if (['Sales','Manage Service','Reimburst','Operasional'].indexOf(result.type) < 0) throw new Error('Jenis pengajuan Non Projek tidak valid.');}
+  else if (result.category === 'Non Projek') {if ((master?master.filter(function(e){return e.kind==='work'&&e.category==='Non Projek';}).map(function(e){return e.name;}):['Sales','Manage Service','Reimburst','Operasional']).indexOf(result.type) < 0) throw new Error('Jenis pengajuan Non Projek tidak valid.');}
   else throw new Error('Kategori pengajuan tidak valid.');
   if (result.type === 'Sales') {
     result.details.periode = recordRange_(data.salesPeriodStart,data.salesPeriodEnd);
