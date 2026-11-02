@@ -170,7 +170,12 @@ function portalDispatch_(action,input,actor){
   }
   var inv=portalOwn_(account,portalGet_('Invoice',input.id));
   if(action==='get'){var view=JSON.parse(JSON.stringify(inv));view.displayDetails=portalDetailLines_(inv.data);return view;}
-  if(action==='delete'){if(!admin)throw Error('Hanya Admin yang dapat menghapus invoice.');var reason=recordText_(input.note,'Alasan penghapusan',1000);inv.previousStatus=inv.status;inv.status='DELETED';inv.deletedAt=new Date().toISOString();inv.deletedBy=account.email;portalHistory_(inv,account,'DELETE',reason);
+  if(action==='editValues'){
+   if(!admin)throw Error('Hanya Admin yang dapat mengubah nilai invoice.');if(inv.status==='PAID')throw Error('Nilai invoice Paid tidak dapat diubah.');var reason=recordText_(input.note,'Alasan perubahan nilai',1000);
+   if(!Array.isArray(input.prices)||input.prices.length!==inv.items.length)throw Error('Rincian harga tidak sesuai.');
+   var revised=inv.items.map(function(item,index){var price=Number(input.prices[index]),amount=Math.round(item.qty*price);if(!Number.isSafeInteger(price)||price<1||!Number.isSafeInteger(amount)||amount<1)throw Error('Harga atau subtotal tidak valid.');var copy=JSON.parse(JSON.stringify(item));copy.price=price;copy.amount=amount;return copy;}),total=revised.reduce(function(sum,item){return sum+item.amount;},0);if(!Number.isSafeInteger(total))throw Error('Total invoice terlalu besar.');
+   inv.valueRevisions=inv.valueRevisions||[];inv.valueRevisions.push({at:new Date().toISOString(),by:account.email,note:reason,items:inv.items,total:inv.total,status:inv.status,approvedAt:inv.approvedAt||null,approvedBy:inv.approvedBy||null,pdfId:inv.pdfId||null});inv.items=revised;inv.total=total;inv.priced=true;inv.priceConfirmed=false;if(['DRAFT','REVISION'].indexOf(inv.status)<0)inv.status='CONFIRMATION';inv.pdfId=null;inv.approvedAt=null;inv.approvedBy=null;portalHistory_(inv,account,'EDIT_VALUES',reason);
+  } else if(action==='delete'){if(!admin)throw Error('Hanya Admin yang dapat menghapus invoice.');var reason=recordText_(input.note,'Alasan penghapusan',1000);inv.previousStatus=inv.status;inv.status='DELETED';inv.deletedAt=new Date().toISOString();inv.deletedBy=account.email;portalHistory_(inv,account,'DELETE',reason);
   } else if(action==='submit'){
    if(portalRole_(account)!=='PEMOHON'||inv.owner!==account.id||['DRAFT','REVISION'].indexOf(inv.status)<0)throw Error('Pengajuan tidak dapat diajukan.');
    // Prices shown in the draft are the ones the applicant submits, not a new live tariff.
