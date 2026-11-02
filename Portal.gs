@@ -21,7 +21,7 @@ function portalSaveAccount_(input,actor){
 function portalPublic_(account){return {id:account.id,email:account.email,name:account.name,role:portalRole_(account),profile:account.profile||null};}
 function portalComplete_(profile){return !!(profile&&profile.name&&profile.phone&&profile.address&&profile.bank&&profile.accountNumber&&profile.accountOwner);}
 function portalActor_(actor){if(!actor||!actor.id||!actor.email)throw Error('Silakan masuk kembali.');var a=portalGet_('Akun',actor.email);if(!a||a.id!==actor.id||(a.sessionVersion||1)!==actor.sessionVersion||a.disabled)throw Error('Sesi tidak berlaku.');return a;}
-function portalOwn_(account,invoice){if(!invoice||(!portalAdmin_(account)&&!(portalFinance_(account)&&invoice.status!=='DRAFT')&&invoice.owner!==account.id))throw Error('Pengajuan tidak ditemukan.');return invoice;}
+function portalOwn_(account,invoice){if(!invoice||invoice.status==='DELETED'||(!portalAdmin_(account)&&!(portalFinance_(account)&&invoice.status!=='DRAFT')&&invoice.owner!==account.id))throw Error('Pengajuan tidak ditemukan.');return invoice;}
 function portalHistory_(invoice,account,action,note){invoice.updatedAt=new Date().toISOString();invoice.history=invoice.history||[];invoice.history.push({at:invoice.updatedAt,by:account.email,action:action,note:note||''});}
 function portalCredential_(input){var email=recordText_(input.email,'Email',254).toLowerCase();return portalGet_('Akun',email);}
 function portalAuth_(action,input){
@@ -152,7 +152,7 @@ function portalDispatch_(action,input,actor){
    if(!work||(t.category!==undefined&&t.category!==work.category)||work.name==='Reimburst'||portalMasterNames_('project',true).indexOf(t.projectType)<0||!master.some(function(e){return e.kind==='unit'&&e.name===t.unit&&e.active&&(work.category!=='Projek'||e.projectUnit);})||!Number.isSafeInteger(Number(t.price))||Number(t.price)<=0)throw Error('Tarif tidak valid. Pilih proyek, pekerjaan, dan satuan aktif.');
    t={projectType:t.projectType,category:work.category,type:recordText_(t.type,'Jenis pekerjaan',80),unit:t.unit,price:Number(t.price),updatedBy:account.email,updatedAt:new Date().toISOString()};portalPut_('Tarif',JSON.stringify([t.projectType,t.type,t.unit]),t);if(work.category==='Non Projek'&&work.unit!==t.unit)portalSaveMaster_({entry:{kind:'work',name:work.name,category:work.category,active:work.active,unit:t.unit}},account);return t;
   }
-  if(action==='list')return portalRows_('Invoice').map(function(r){return r.value;}).filter(function(i){return admin||(portalFinance_(account)&&i.status!=='DRAFT')||i.owner===account.id;}).map(function(i){return {id:i.id,number:i.number||'',applicant:i.profile.name,type:i.data.requestType,requestDate:i.data.requestDate,projectType:i.data.projectType,status:i.status,total:i.total,updatedAt:i.updatedAt};}).sort(function(a,b){return b.updatedAt.localeCompare(a.updatedAt);});
+  if(action==='list')return portalRows_('Invoice').map(function(r){return r.value;}).filter(function(i){return i.status!=='DELETED'&&(admin||(portalFinance_(account)&&i.status!=='DRAFT')||i.owner===account.id);}).map(function(i){return {id:i.id,number:i.number||'',applicant:i.profile.name,type:i.data.requestType,requestDate:i.data.requestDate,projectType:i.data.projectType,status:i.status,total:i.total,updatedAt:i.updatedAt};}).sort(function(a,b){return b.updatedAt.localeCompare(a.updatedAt);});
   if(action==='draft'){
    if(portalRole_(account)!=='PEMOHON')throw Error('Pembuatan invoice menggunakan akun Pemohon.');
    if(!portalComplete_(account.profile))throw Error('Lengkapi Profil Saya terlebih dahulu.');
@@ -170,7 +170,8 @@ function portalDispatch_(action,input,actor){
   }
   var inv=portalOwn_(account,portalGet_('Invoice',input.id));
   if(action==='get'){var view=JSON.parse(JSON.stringify(inv));view.displayDetails=portalDetailLines_(inv.data);return view;}
-  if(action==='submit'){
+  if(action==='delete'){if(!admin)throw Error('Hanya Admin yang dapat menghapus invoice.');var reason=recordText_(input.note,'Alasan penghapusan',1000);inv.previousStatus=inv.status;inv.status='DELETED';inv.deletedAt=new Date().toISOString();inv.deletedBy=account.email;portalHistory_(inv,account,'DELETE',reason);
+  } else if(action==='submit'){
    if(portalRole_(account)!=='PEMOHON'||inv.owner!==account.id||['DRAFT','REVISION'].indexOf(inv.status)<0)throw Error('Pengajuan tidak dapat diajukan.');
    // Prices shown in the draft are the ones the applicant submits, not a new live tariff.
    portalEnsureNumber_(inv);inv.status='SUBMITTED';inv.priceConfirmed=inv.priced;portalHistory_(inv,account,'SUBMIT');
